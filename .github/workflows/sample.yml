@@ -25,7 +25,21 @@ jobs:
     - name: Handle event
       uses: ./
       with:
-        slack_hook: ${{ secrets.SLACK_HOOK }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        instructions: |
+            ## Checklists
+
+            - [ ] Approval from a peer that has sufficient context to understand the proposed change
+            - [ ] A description of the change that provides sufficient context for the reviewer
+            - [ ] Relevant tests were added to ensure that code change has the desired impact
+            - [ ] All existing automated test suites are green
+
+            ## Is this an emergency change?
+            If a change needs to be made immediately because of an emergency, you can apply the `emergency-ci` and `emergency-approval` labels to skip those required checks.
+        posthoc_approval_label: posthoc-approval
         relevant_labels: "console-access"
         required_checks: "ci/circleci: test,ci/circleci: lint"
+        skip_approval_label: emergency-approval
+        skip_ci_label: emergency-ci
+        slack_hook: ${{ secrets.SLACK_HOOK }}
+        verified_ci_label: verified-ci
