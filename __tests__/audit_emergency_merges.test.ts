@@ -12,7 +12,7 @@ describe('::auditEmergencyMerges', () => {
   it('sends a message to slack', async () => {
     let pullRequest;
     pullRequest = {
-      url: "www.iamurl.com",
+      html_url: "www.iamurl.com",
     };
     mocked(getMergedEmergencyPRsMissingReview).mockResolvedValue([pullRequest]);
     await auditEmergencyMerges();

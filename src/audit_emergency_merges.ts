@@ -10,5 +10,5 @@ export async function auditEmergencyMerges() {
 }
 
 function generateMessage(pr) {
-  return `Emergency merged PR needs still needs a review! ${pr.url}`;
+  return `Emergency merged PR needs still needs a review! ${pr.html_url}`;
 }
