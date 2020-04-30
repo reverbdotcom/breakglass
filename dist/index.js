@@ -14655,6 +14655,7 @@ function run() {
             }));
             const input = getInput();
             const context = getContext();
+            Object(core.debug)(JSON.stringify(getInput()));
             switch (context.eventName) {
                 case SCHEDULE:
                     onDaily(retroactivelyMarkPRsWithGreenBuilds);

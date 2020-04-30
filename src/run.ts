@@ -31,6 +31,7 @@ export async function run(): Promise<void> {
 
     const input = getInput();
     const context = getContext();
+    core.debug(JSON.stringify(getInput()));
 
     switch (context.eventName) {
       case SCHEDULE:

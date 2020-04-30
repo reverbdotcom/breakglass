@@ -1,17 +1,22 @@
 name: "build-test"
 on:
-  pull_request:
   push:
     branches:
-      - master
+      - s/test
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - run: |
-        make setup lint test
-    - run: |
-        make clean dist/index.js
-        git diff --quiet --exit-code || (echo "Make sure to check in the built project, i.e. run 'make dist/index.js'"; exit 1)
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Handle event
+        uses: ./
+        with:
+          slack_hook: ${{ secrets.SLACK_HOOK }}
+          skip_ci_label: the-label-that-triggers-ci-skip
+          skip_approval_label: the-label-that-triggers-approval-skip
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          relevant_labels: "console-access"
+          required_checks: "ci/circleci: test,ci/circleci: lint"
