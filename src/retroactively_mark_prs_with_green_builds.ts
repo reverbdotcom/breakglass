@@ -8,6 +8,9 @@ import {
   tagCIChecksOnPR,
 } from './github';
 
+import { postMessage } from './slack';
+
+const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
 const SUCCESS = 'success';
 
 export async function retroactivelyMarkPRsWithGreenBuilds() {
@@ -15,7 +18,10 @@ export async function retroactivelyMarkPRsWithGreenBuilds() {
   if (!pullRequests.length) return;
 
   const { state, sha } = await getStatusOfMaster();
-  if (state !== SUCCESS) return;
+  if (state !== SUCCESS) {
+    await postMessage(FAILED_MASTER);
+    return;
+  };
 
   const message = `Code from this PR has passed all checks.\n\n${sha}`;
 

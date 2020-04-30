@@ -14573,6 +14573,8 @@ var retroactively_mark_prs_with_green_builds_awaiter = (undefined && undefined._
     });
 };
 
+
+const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
 const SUCCESS = 'success';
 function retroactivelyMarkPRsWithGreenBuilds() {
     return retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
@@ -14580,8 +14582,11 @@ function retroactivelyMarkPRsWithGreenBuilds() {
         if (!pullRequests.length)
             return;
         const { state, sha } = yield getStatusOfMaster();
-        if (state !== SUCCESS)
+        if (state !== SUCCESS) {
+            yield postMessage(FAILED_MASTER);
             return;
+        }
+        ;
         const message = `Code from this PR has passed all checks.\n\n${sha}`;
         yield pullRequests.forEach((pullRequest) => retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
             const { number } = pullRequest;

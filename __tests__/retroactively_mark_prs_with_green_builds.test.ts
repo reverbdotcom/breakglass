@@ -1,5 +1,6 @@
 jest.mock('../src/input');
 jest.mock('../src/github');
+jest.mock('../src/slack');
 
 import { mocked } from 'ts-jest/utils';
 
@@ -13,6 +14,8 @@ import {
   tagCIChecksOnPR,
   getStatusOfMaster,
 } from '../src/github';
+
+import { postMessage } from '../src/slack';
 
 describe('::retroactivelyMarkPRsMissingCIChecks', () => {
   describe('with merged prs that have ci check overrides', () => {
@@ -53,8 +56,9 @@ describe('::retroactivelyMarkPRsMissingCIChecks', () => {
         } as any);
       });
 
-      it('does nothing', async () => {
+      it('posts in slack but does not touch prs', async () => {
         await retroactivelyMarkPRsWithGreenBuilds();
+        expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/failing checks/));
         expect(tagCIChecksOnPR).not.toHaveBeenCalled();
         expect(addCommentToIssue).not.toHaveBeenCalled();
       });
