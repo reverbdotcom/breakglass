@@ -14293,7 +14293,7 @@ function getInput() {
             required: true,
         }),
         posthocApprovalLabel: Object(core.getInput)('retroactive_approval_label'),
-        verifiedCILabel: Object(core.getInput)('verify_ci_label')
+        verifiedCILabel: Object(core.getInput)('verified_ci_label'),
     };
 }
 

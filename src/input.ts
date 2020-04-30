@@ -27,6 +27,6 @@ export function getInput(): Input {
       required: true,
     }),
     posthocApprovalLabel: core.getInput('retroactive_approval_label'),
-    verifiedCILabel: core.getInput('verify_ci_label')
+    verifiedCILabel: core.getInput('verified_ci_label'),
   };
 }
