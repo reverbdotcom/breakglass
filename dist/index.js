@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(362);
+/******/ 		return __webpack_require__(409);
 /******/ 	};
 /******/ 	// initialize runtime
 /******/ 	runtime(__webpack_require__);
@@ -10285,7 +10285,7 @@ exports.debug = debug // for test
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 var errors = __webpack_require__(584);
-var types = __webpack_require__(398);
+var types = __webpack_require__(362);
 
 var Reader = __webpack_require__(733);
 var Writer = __webpack_require__(998);
@@ -14226,465 +14226,44 @@ module.exports = require("assert");
 /* 360 */,
 /* 361 */,
 /* 362 */
-/***/ (function(__unusedmodule, __webpack_exports__, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
+// Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __webpack_require__(470);
 
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __webpack_require__(469);
-
-// EXTERNAL MODULE: ./node_modules/request-promise-native/lib/rp.js
-var rp = __webpack_require__(117);
-
-// CONCATENATED MODULE: ./src/slack.ts
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+module.exports = {
+  EOC: 0,
+  Boolean: 1,
+  Integer: 2,
+  BitString: 3,
+  OctetString: 4,
+  Null: 5,
+  OID: 6,
+  ObjectDescriptor: 7,
+  External: 8,
+  Real: 9, // float
+  Enumeration: 10,
+  PDV: 11,
+  Utf8String: 12,
+  RelativeOID: 13,
+  Sequence: 16,
+  Set: 17,
+  NumericString: 18,
+  PrintableString: 19,
+  T61String: 20,
+  VideotexString: 21,
+  IA5String: 22,
+  UTCTime: 23,
+  GeneralizedTime: 24,
+  GraphicString: 25,
+  VisibleString: 26,
+  GeneralString: 28,
+  UniversalString: 29,
+  CharacterString: 30,
+  BMPString: 31,
+  Constructor: 32,
+  Context: 128
 };
-
-
-const hook = Object(core.getInput)('slack_hook', {
-    required: true,
-});
-function postMessage(text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        rp({
-            uri: hook,
-            method: 'POST',
-            body: {
-                text,
-            },
-            json: true,
-        });
-    });
-}
-
-// CONCATENATED MODULE: ./src/context.ts
-// wrapper to make testing simpler
-
-function getContext() {
-    return github.context;
-}
-
-// CONCATENATED MODULE: ./src/input.ts
-// see action.yml for more details
-
-function getInput() {
-    return {
-        githubToken: Object(core.getInput)('github_token', {
-            required: true,
-        }),
-        instructions: Object(core.getInput)('instructions'),
-        requiredChecks: Object(core.getInput)('required_checks', {
-            required: true,
-        }).split(','),
-        skipApprovalLabel: Object(core.getInput)('skip_approval_label'),
-        skipCILabel: Object(core.getInput)('skip_ci_label'),
-        slackHook: Object(core.getInput)('slack_hook', {
-            required: true,
-        }),
-        posthocApprovalLabel: Object(core.getInput)('posthoc_approval_label'),
-        verifiedCILabel: Object(core.getInput)('verified_ci_label'),
-    };
-}
-
-// CONCATENATED MODULE: ./src/github.ts
-var github_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = getInput();
-const github_context = getContext();
-const { owner: github_owner, repo: github_repo } = github_context.repo;
-const CLOSED = 'closed';
-const MASTER = 'master';
-const client = new github.GitHub(githubToken);
-const REPO_SLUG = `${github_owner}/${github_repo}`;
-function getStatusOfMaster() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.repos.getCombinedStatusForRef({
-            owner: github_owner,
-            repo: github_repo,
-            ref: MASTER,
-        });
-        return data;
-    });
-}
-function tagCIChecksOnPR(number) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return labelIssue(number, verifiedCILabel);
-    });
-}
-function getMergedEmergencyPRsMissingReview() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.search.issuesAndPullRequests({
-            q: [
-                `repo:${REPO_SLUG}`,
-                `label:${skipApprovalLabel}`,
-                `-label:${posthocApprovalLabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
-        });
-        return data.items.filter(i => i.pull_request);
-    });
-}
-function getPRsMissingCIChecks() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.search.issuesAndPullRequests({
-            q: [
-                `repo:${REPO_SLUG}`,
-                `label:${skipCILabel}`,
-                `-label:${verifiedCILabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
-        });
-        return data.items.filter(i => i.pull_request);
-    });
-}
-function labelIssue(number, label) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return client.issues.addLabels({
-            owner: github_owner,
-            repo: github_repo,
-            issue_number: number,
-            labels: [
-                label,
-            ],
-        });
-    });
-}
-function addCommentToIssue(number, body) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return client.issues.createComment({
-            owner: github_owner,
-            repo: github_repo,
-            issue_number: number,
-            body: formatComment(body),
-        });
-    });
-}
-function formatComment(body) {
-    const now = new Date().toString();
-    return `${body}\n\n---\n${now}`;
-}
-
-// CONCATENATED MODULE: ./src/on_pull_request.ts
-var on_pull_request_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-/**
- * Main entry point for all pullRequest actions.
- * We've split these up for easier unit testing.
- *
- * This action is responsible for removing PR checks that
- * otherwise lock the merge button in the case of an emergency.
- *
- * While removing these checks it does so through explicit labels
- * and will notify any specified slack rooms.
- */
-function onPullRequest(octokit, context, input) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const { payload } = context;
-        if (payload.action === 'labeled') {
-            yield onLabel(octokit, context, input);
-            return;
-        }
-        if (payload.action === 'opened') {
-            yield onOpen(octokit, context, input);
-            return;
-        }
-    });
-}
-/**
- * onLabel sets up the PR with a basic checklist
- */
-function onOpen(octokit, context, input) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const body = input.instructions;
-        yield comment(octokit, context.issue, body);
-    });
-}
-function byPassChecks(octokit, issue, sha, checks) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const reqs = checks.map((context) => on_pull_request_awaiter(this, void 0, void 0, function* () {
-            Object(core.debug)(`bypassing check - ${context}`);
-            return octokit.repos.createStatus({
-                owner: issue.owner,
-                repo: issue.repo,
-                sha: sha,
-                context,
-                state: 'success',
-            });
-        }));
-        yield Promise.all(reqs);
-    });
-}
-/**
- * onLabel event checks to see if the emergency-ci or emergency-approval
- * label has been applied. In the case that either have, the corresponding
- * check will be removed and recorded.
- */
-function onLabel(octokit, context, input) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const { issue, payload } = context;
-        const { owner, repo, number } = issue;
-        Object(core.debug)(`label event received: ${pp(payload)}`);
-        if (payload.label.name === input.skipCILabel) {
-            Object(core.debug)(`skip_ci_label applied`);
-            yield postMessage(`Bypassing CI checks for: https://github.com/${owner}/${repo}/${number}`);
-            yield comment(octokit, issue, `Bypassing CI checks - ${payload.label.name} applied`);
-            yield byPassChecks(octokit, issue, payload.pull_request.head.sha, input.requiredChecks);
-        }
-        if (payload.label.name === input.skipApprovalLabel) {
-            Object(core.debug)(`skip_approval applied`);
-            yield postMessage(`Bypassing peer approval for: https://github.com/${owner}/${repo}/${number}`);
-            yield octokit.pulls.createReview({
-                owner: issue.owner,
-                repo: issue.repo,
-                pull_number: issue.number,
-                body: `Skipping approval check - ${payload.label.name} applied`,
-                event: 'APPROVE',
-            });
-        }
-    });
-}
-function comment(octokit, issue, body) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        yield octokit.issues.createComment({
-            owner: issue.owner,
-            repo: issue.repo,
-            issue_number: issue.number,
-            body: formatComment(body),
-        });
-    });
-}
-function pp(obj) {
-    return JSON.stringify(obj, undefined, 2);
-}
-
-// CONCATENATED MODULE: ./src/on_issue.ts
-var on_issue_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-const LABELED_ACTION = 'labeled';
-const NEWLINE = '\n';
-const RELEVANT_LABELS = Object(core.getInput)('relevant_labels').split(',');
-function onIssue(context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const payload = context.payload;
-        const { action, issue, label, } = payload;
-        if (action !== LABELED_ACTION) {
-            // even when creating an issue with a label, the label event happens after the create event
-            Object(core.debug)('irrelevant issue event, skipping');
-            return;
-        }
-        const relevantLabels = getRelevantLabels(issue);
-        if (!relevantLabels.length) {
-            Object(core.debug)('irrelevant issue label, skipping');
-            return;
-        }
-        // relevant label was already on issue, a different one was added
-        if (relevantLabels.indexOf(label.name) < 0) {
-            yield on_issue_onLabel(context);
-            // label event is the application of relevant label
-        }
-        else {
-            yield onEnterWorkflow(label.name, context);
-        }
-    });
-}
-function getRelevantLabels(issue) {
-    return issue.labels.reduce((accumulator, label) => {
-        const { name } = label;
-        if (RELEVANT_LABELS.indexOf(name) < 0)
-            return accumulator;
-        return [...accumulator, name];
-    }, []);
-}
-function onEnterWorkflow(labelName, context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const { actor, payload, } = context;
-        const { issue, repository, } = payload;
-        const { name, } = repository;
-        const { html_url, number, body, } = issue;
-        const quotedBody = body.split(NEWLINE).map(line => `> ${line}`).join(NEWLINE);
-        yield record(`<${html_url}|#${number}> (${name}) _*${labelName}*_ requested by ${actor}\n\n${quotedBody}`);
-    });
-}
-function on_issue_onLabel(context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const { actor, payload, } = context;
-        const { issue, label, repository, } = payload;
-        const { name, } = repository;
-        const { html_url, number, } = issue;
-        yield record(`<${html_url}|#${number}> (${name}) _*${label.name}*_ by ${actor}`);
-    });
-}
-function record(message) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        yield postMessage(message);
-    });
-}
-
-// CONCATENATED MODULE: ./src/retroactively_mark_prs_with_green_builds.ts
-// when a pr has bypassed ci checks, this goes back to mark that master become green at some point after,
-// i.e. that a broken app isn't sitting in production
-var retroactively_mark_prs_with_green_builds_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
-const SUCCESS = 'success';
-function retroactivelyMarkPRsWithGreenBuilds() {
-    return retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
-        const pullRequests = yield getPRsMissingCIChecks();
-        if (!pullRequests.length)
-            return;
-        const { state, sha } = yield getStatusOfMaster();
-        if (state !== SUCCESS) {
-            yield postMessage(FAILED_MASTER);
-            return;
-        }
-        ;
-        const message = `Code from this PR has passed all checks.\n\n${sha}`;
-        yield pullRequests.forEach((pullRequest) => retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
-            const { number } = pullRequest;
-            yield addCommentToIssue(number, message);
-            yield tagCIChecksOnPR(pullRequest.number);
-        }));
-    });
-}
-
-// CONCATENATED MODULE: ./src/audit_emergency_merges.ts
-var audit_emergency_merges_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-function auditEmergencyMerges() {
-    return audit_emergency_merges_awaiter(this, void 0, void 0, function* () {
-        const pullRequests = yield getMergedEmergencyPRsMissingReview();
-        for (const pr of pullRequests) {
-            yield postMessage(generateMessage(pr));
-        }
-    });
-}
-function generateMessage(pr) {
-    return `Emergency merged PR needs still needs a review! ${pr.html_url}`;
-}
-
-// CONCATENATED MODULE: ./src/run.ts
-var run_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-
-
-
-
-
-const PULL_REQUEST_EVENT_NAME = 'pull_request';
-const ISSUE_EVENT_NAME = 'issues';
-const SCHEDULE = 'schedule';
-const UNSUPPORTED_EVENT = 'Workflow triggered by an unsupported event';
-function onCron(cronSchedule) {
-    return (callback) => {
-        const { payload } = getContext();
-        const { schedule } = payload;
-        if (cronSchedule === schedule)
-            callback();
-    };
-}
-const onDaily = onCron('0 0 * * *');
-// Entry point for any GitHub Actions
-function run() {
-    return run_awaiter(this, void 0, void 0, function* () {
-        try {
-            const octokit = new github.GitHub(Object(core.getInput)('github_token', {
-                required: true,
-            }));
-            const input = getInput();
-            const context = getContext();
-            switch (context.eventName) {
-                case SCHEDULE:
-                    onDaily(retroactivelyMarkPRsWithGreenBuilds);
-                    onDaily(auditEmergencyMerges);
-                    break;
-                case PULL_REQUEST_EVENT_NAME:
-                    onPullRequest(octokit, context, input);
-                    break;
-                case ISSUE_EVENT_NAME:
-                    onIssue(context);
-                    break;
-                default:
-                    Object(core.setFailed)(UNSUPPORTED_EVENT);
-            }
-        }
-        catch (error) {
-            Object(core.setFailed)(error.message);
-            Object(core.debug)(error.stack);
-        }
-    });
-}
-
-// CONCATENATED MODULE: ./src/index.ts
-
-run();
 
 
 /***/ }),
@@ -15968,48 +15547,7 @@ module.exports = function generate_multipleOf(it, $keyword, $ruleType) {
 
 
 /***/ }),
-/* 398 */
-/***/ (function(module) {
-
-// Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
-
-
-module.exports = {
-  EOC: 0,
-  Boolean: 1,
-  Integer: 2,
-  BitString: 3,
-  OctetString: 4,
-  Null: 5,
-  OID: 6,
-  ObjectDescriptor: 7,
-  External: 8,
-  Real: 9, // float
-  Enumeration: 10,
-  PDV: 11,
-  Utf8String: 12,
-  RelativeOID: 13,
-  Sequence: 16,
-  Set: 17,
-  NumericString: 18,
-  PrintableString: 19,
-  T61String: 20,
-  VideotexString: 21,
-  IA5String: 22,
-  UTCTime: 23,
-  GeneralizedTime: 24,
-  GraphicString: 25,
-  VisibleString: 26,
-  GeneralString: 28,
-  UniversalString: 29,
-  CharacterString: 30,
-  BMPString: 31,
-  Constructor: 32,
-  Context: 128
-};
-
-
-/***/ }),
+/* 398 */,
 /* 399 */,
 /* 400 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -16284,7 +15822,555 @@ module.exports = require("buffer");
 
 /***/ }),
 /* 408 */,
-/* 409 */,
+/* 409 */
+/***/ (function(__unusedmodule, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __webpack_require__(470);
+
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __webpack_require__(469);
+
+// EXTERNAL MODULE: ./node_modules/request-promise-native/lib/rp.js
+var rp = __webpack_require__(117);
+
+// CONCATENATED MODULE: ./src/slack.ts
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+const hook = Object(core.getInput)('slack_hook', {
+    required: true,
+});
+function postMessage(text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        rp({
+            uri: hook,
+            method: 'POST',
+            body: {
+                text,
+            },
+            json: true,
+        });
+    });
+}
+
+// CONCATENATED MODULE: ./src/context.ts
+// wrapper to make testing simpler
+
+function getContext() {
+    return github.context;
+}
+
+// CONCATENATED MODULE: ./src/input.ts
+// see action.yml for more details
+
+function getInput() {
+    return {
+        githubToken: Object(core.getInput)('github_token', {
+            required: true,
+        }),
+        instructions: Object(core.getInput)('instructions'),
+        requiredChecks: Object(core.getInput)('required_checks', {
+            required: true,
+        }).split(','),
+        skipApprovalLabel: Object(core.getInput)('skip_approval_label'),
+        skipCILabel: Object(core.getInput)('skip_ci_label'),
+        slackHook: Object(core.getInput)('slack_hook', {
+            required: true,
+        }),
+        posthocApprovalLabel: Object(core.getInput)('posthoc_approval_label'),
+        verifiedCILabel: Object(core.getInput)('verified_ci_label'),
+    };
+}
+
+// CONCATENATED MODULE: ./src/github.ts
+var github_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = getInput();
+const github_context = getContext();
+const { owner: github_owner, repo: github_repo } = github_context.repo;
+const CLOSED = 'closed';
+const MASTER = 'master';
+const client = new github.GitHub(githubToken);
+const REPO_SLUG = `${github_owner}/${github_repo}`;
+function getStatusOfMaster() {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data } = yield client.repos.getCombinedStatusForRef({
+            owner: github_owner,
+            repo: github_repo,
+            ref: MASTER,
+        });
+        return data;
+    });
+}
+function tagCIChecksOnPR(number) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        return labelIssue(number, verifiedCILabel);
+    });
+}
+function getMergedEmergencyPRsMissingReview() {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data } = yield client.search.issuesAndPullRequests({
+            q: [
+                `repo:${REPO_SLUG}`,
+                `label:${skipApprovalLabel}`,
+                `-label:${posthocApprovalLabel}`,
+                `state:${CLOSED}`,
+            ].join('+'),
+        });
+        return data.items.filter(i => i.pull_request);
+    });
+}
+function getClosedInPastWeek() {
+    return github_awaiter(this, void 0, void 0, function* () {
+        let date = new Date();
+        date.setDate(date.getDate() - 7);
+        let closedDate = date.toISOString().substr(0, 10);
+        const { data } = yield client.search.issuesAndPullRequests({
+            q: [
+                `repo:${REPO_SLUG}`,
+                `state:${CLOSED}`,
+                `closed:>${closedDate}`
+            ].join('+'),
+        });
+        return data.items.filter(i => i.pull_request);
+    });
+}
+function getDetailedPR(number) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data } = yield client.pulls.get({
+            owner: github_owner,
+            repo: github_repo,
+            pull_number: number,
+        });
+        return data;
+    });
+}
+function getPRsMissingCIChecks() {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data } = yield client.search.issuesAndPullRequests({
+            q: [
+                `repo:${REPO_SLUG}`,
+                `label:${skipCILabel}`,
+                `-label:${verifiedCILabel}`,
+                `state:${CLOSED}`,
+            ].join('+'),
+        });
+        return data.items.filter(i => i.pull_request);
+    });
+}
+function labelIssue(number, label) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        return client.issues.addLabels({
+            owner: github_owner,
+            repo: github_repo,
+            issue_number: number,
+            labels: [
+                label,
+            ],
+        });
+    });
+}
+function addCommentToIssue(number, body) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        return client.issues.createComment({
+            owner: github_owner,
+            repo: github_repo,
+            issue_number: number,
+            body: formatComment(body),
+        });
+    });
+}
+function formatComment(body) {
+    const now = new Date().toString();
+    return `${body}\n\n---\n${now}`;
+}
+
+// CONCATENATED MODULE: ./src/on_pull_request.ts
+var on_pull_request_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+/**
+ * Main entry point for all pullRequest actions.
+ * We've split these up for easier unit testing.
+ *
+ * This action is responsible for removing PR checks that
+ * otherwise lock the merge button in the case of an emergency.
+ *
+ * While removing these checks it does so through explicit labels
+ * and will notify any specified slack rooms.
+ */
+function onPullRequest(octokit, context, input) {
+    return on_pull_request_awaiter(this, void 0, void 0, function* () {
+        const { payload } = context;
+        if (payload.action === 'labeled') {
+            yield onLabel(octokit, context, input);
+            return;
+        }
+        if (payload.action === 'opened') {
+            yield onOpen(octokit, context, input);
+            return;
+        }
+    });
+}
+/**
+ * onLabel sets up the PR with a basic checklist
+ */
+function onOpen(octokit, context, input) {
+    return on_pull_request_awaiter(this, void 0, void 0, function* () {
+        const body = input.instructions;
+        yield comment(octokit, context.issue, body);
+    });
+}
+function byPassChecks(octokit, issue, sha, checks) {
+    return on_pull_request_awaiter(this, void 0, void 0, function* () {
+        const reqs = checks.map((context) => on_pull_request_awaiter(this, void 0, void 0, function* () {
+            Object(core.debug)(`bypassing check - ${context}`);
+            return octokit.repos.createStatus({
+                owner: issue.owner,
+                repo: issue.repo,
+                sha: sha,
+                context,
+                state: 'success',
+            });
+        }));
+        yield Promise.all(reqs);
+    });
+}
+/**
+ * onLabel event checks to see if the emergency-ci or emergency-approval
+ * label has been applied. In the case that either have, the corresponding
+ * check will be removed and recorded.
+ */
+function onLabel(octokit, context, input) {
+    return on_pull_request_awaiter(this, void 0, void 0, function* () {
+        const { issue, payload } = context;
+        const { owner, repo, number } = issue;
+        Object(core.debug)(`label event received: ${pp(payload)}`);
+        if (payload.label.name === input.skipCILabel) {
+            Object(core.debug)(`skip_ci_label applied`);
+            yield postMessage(`Bypassing CI checks for: https://github.com/${owner}/${repo}/${number}`);
+            yield comment(octokit, issue, `Bypassing CI checks - ${payload.label.name} applied`);
+            yield byPassChecks(octokit, issue, payload.pull_request.head.sha, input.requiredChecks);
+        }
+        if (payload.label.name === input.skipApprovalLabel) {
+            Object(core.debug)(`skip_approval applied`);
+            yield postMessage(`Bypassing peer approval for: https://github.com/${owner}/${repo}/${number}`);
+            yield octokit.pulls.createReview({
+                owner: issue.owner,
+                repo: issue.repo,
+                pull_number: issue.number,
+                body: `Skipping approval check - ${payload.label.name} applied`,
+                event: 'APPROVE',
+            });
+        }
+    });
+}
+function comment(octokit, issue, body) {
+    return on_pull_request_awaiter(this, void 0, void 0, function* () {
+        yield octokit.issues.createComment({
+            owner: issue.owner,
+            repo: issue.repo,
+            issue_number: issue.number,
+            body: formatComment(body),
+        });
+    });
+}
+function pp(obj) {
+    return JSON.stringify(obj, undefined, 2);
+}
+
+// CONCATENATED MODULE: ./src/on_issue.ts
+var on_issue_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+const LABELED_ACTION = 'labeled';
+const NEWLINE = '\n';
+const RELEVANT_LABELS = Object(core.getInput)('relevant_labels').split(',');
+function onIssue(context) {
+    return on_issue_awaiter(this, void 0, void 0, function* () {
+        const payload = context.payload;
+        const { action, issue, label, } = payload;
+        if (action !== LABELED_ACTION) {
+            // even when creating an issue with a label, the label event happens after the create event
+            Object(core.debug)('irrelevant issue event, skipping');
+            return;
+        }
+        const relevantLabels = getRelevantLabels(issue);
+        if (!relevantLabels.length) {
+            Object(core.debug)('irrelevant issue label, skipping');
+            return;
+        }
+        // relevant label was already on issue, a different one was added
+        if (relevantLabels.indexOf(label.name) < 0) {
+            yield on_issue_onLabel(context);
+            // label event is the application of relevant label
+        }
+        else {
+            yield onEnterWorkflow(label.name, context);
+        }
+    });
+}
+function getRelevantLabels(issue) {
+    return issue.labels.reduce((accumulator, label) => {
+        const { name } = label;
+        if (RELEVANT_LABELS.indexOf(name) < 0)
+            return accumulator;
+        return [...accumulator, name];
+    }, []);
+}
+function onEnterWorkflow(labelName, context) {
+    return on_issue_awaiter(this, void 0, void 0, function* () {
+        const { actor, payload, } = context;
+        const { issue, repository, } = payload;
+        const { name, } = repository;
+        const { html_url, number, body, } = issue;
+        const quotedBody = body.split(NEWLINE).map(line => `> ${line}`).join(NEWLINE);
+        yield record(`<${html_url}|#${number}> (${name}) _*${labelName}*_ requested by ${actor}\n\n${quotedBody}`);
+    });
+}
+function on_issue_onLabel(context) {
+    return on_issue_awaiter(this, void 0, void 0, function* () {
+        const { actor, payload, } = context;
+        const { issue, label, repository, } = payload;
+        const { name, } = repository;
+        const { html_url, number, } = issue;
+        yield record(`<${html_url}|#${number}> (${name}) _*${label.name}*_ by ${actor}`);
+    });
+}
+function record(message) {
+    return on_issue_awaiter(this, void 0, void 0, function* () {
+        yield postMessage(message);
+    });
+}
+
+// CONCATENATED MODULE: ./src/retroactively_mark_prs_with_green_builds.ts
+// when a pr has bypassed ci checks, this goes back to mark that master become green at some point after,
+// i.e. that a broken app isn't sitting in production
+var retroactively_mark_prs_with_green_builds_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
+const SUCCESS = 'success';
+function retroactivelyMarkPRsWithGreenBuilds() {
+    return retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
+        const pullRequests = yield getPRsMissingCIChecks();
+        if (!pullRequests.length)
+            return;
+        const { state, sha } = yield getStatusOfMaster();
+        if (state !== SUCCESS) {
+            yield postMessage(FAILED_MASTER);
+            return;
+        }
+        ;
+        const message = `Code from this PR has passed all checks.\n\n${sha}`;
+        yield pullRequests.forEach((pullRequest) => retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
+            const { number } = pullRequest;
+            yield addCommentToIssue(number, message);
+            yield tagCIChecksOnPR(pullRequest.number);
+        }));
+    });
+}
+
+// CONCATENATED MODULE: ./src/audit_emergency_merges.ts
+var audit_emergency_merges_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+function auditEmergencyMerges() {
+    return audit_emergency_merges_awaiter(this, void 0, void 0, function* () {
+        const pullRequests = yield getMergedEmergencyPRsMissingReview();
+        for (const pr of pullRequests) {
+            yield postMessage(generateMessage(pr));
+        }
+    });
+}
+function generateMessage(pr) {
+    return `Emergency merged PR needs still needs a review! ${pr.html_url}`;
+}
+
+// EXTERNAL MODULE: ./node_modules/export-to-csv/build/index.js
+var build = __webpack_require__(987);
+
+// CONCATENATED MODULE: ./src/summary_report.ts
+var summary_report_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+function summaryReport() {
+    return summary_report_awaiter(this, void 0, void 0, function* () {
+        const options = {
+            fieldSeparator: ',',
+            quoteStrings: '"',
+            decimalSeparator: '.',
+            showLabels: true,
+            useTextFile: false,
+            useBom: true,
+            useKeysAsHeaders: true,
+        };
+        const csvExporter = new build.ExportToCsv(options);
+        let data = [];
+        try {
+            const pullRequests = yield getClosedInPastWeek();
+            for (const pr of pullRequests) {
+                const detailed_pr = yield getDetailedPR(pr.number);
+                const row = createRow(detailed_pr);
+                data.push(row);
+            }
+        }
+        catch (error) {
+            let data = "Summary report creation failed! 🔥";
+        }
+        // For why we pass in true:
+        // https://github.com/alexcaza/export-to-csv/issues/2
+        yield postMessage(csvExporter.generateCsv(data, true));
+    });
+}
+function createRow(pr) {
+    return {
+        url: pr.html_url,
+        title: pr.title,
+        creator: pr.user.login,
+        merged: pr.merged,
+        merged_by: pr.merged_by.login,
+        closed_at: pr.closed_at,
+        labels: pr.labels,
+        review_comments: pr.review_comments,
+    };
+}
+
+// CONCATENATED MODULE: ./src/run.ts
+var run_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+
+
+
+
+
+
+const PULL_REQUEST_EVENT_NAME = 'pull_request';
+const ISSUE_EVENT_NAME = 'issues';
+const SCHEDULE = 'schedule';
+const UNSUPPORTED_EVENT = 'Workflow triggered by an unsupported event';
+function onCron(cronSchedule) {
+    return (callback) => {
+        const { payload } = getContext();
+        const { schedule } = payload;
+        if (cronSchedule === schedule)
+            callback();
+    };
+}
+const onDaily = onCron('0 0 * * *');
+const onWeekly = onCron('0 0 * * 0');
+// Entry point for any GitHub Actions
+function run() {
+    return run_awaiter(this, void 0, void 0, function* () {
+        try {
+            const octokit = new github.GitHub(Object(core.getInput)('github_token', {
+                required: true,
+            }));
+            const input = getInput();
+            const context = getContext();
+            switch (context.eventName) {
+                case SCHEDULE:
+                    onDaily(retroactivelyMarkPRsWithGreenBuilds);
+                    onDaily(auditEmergencyMerges);
+                    onWeekly(summaryReport);
+                    break;
+                case PULL_REQUEST_EVENT_NAME:
+                    onPullRequest(octokit, context, input);
+                    break;
+                case ISSUE_EVENT_NAME:
+                    onIssue(context);
+                    break;
+                default:
+                    Object(core.setFailed)(UNSUPPORTED_EVENT);
+            }
+        }
+        catch (error) {
+            Object(core.setFailed)(error.message);
+            Object(core.debug)(error.stack);
+        }
+    });
+}
+
+// CONCATENATED MODULE: ./src/index.ts
+
+run();
+
+
+/***/ }),
 /* 410 */,
 /* 411 */
 /***/ (function(module) {
@@ -16300,7 +16386,235 @@ module.exports = require("stream");
 
 /***/ }),
 /* 414 */,
-/* 415 */,
+/* 415 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var CsvConfigConsts = (function () {
+    function CsvConfigConsts() {
+    }
+    CsvConfigConsts.EOL = "\r\n";
+    CsvConfigConsts.BOM = "\ufeff";
+    CsvConfigConsts.DEFAULT_FIELD_SEPARATOR = ',';
+    CsvConfigConsts.DEFAULT_DECIMAL_SEPARATOR = '.';
+    CsvConfigConsts.DEFAULT_QUOTE = '"';
+    CsvConfigConsts.DEFAULT_SHOW_TITLE = false;
+    CsvConfigConsts.DEFAULT_TITLE = 'My Generated Report';
+    CsvConfigConsts.DEFAULT_FILENAME = 'generated';
+    CsvConfigConsts.DEFAULT_SHOW_LABELS = false;
+    CsvConfigConsts.DEFAULT_USE_TEXT_FILE = false;
+    CsvConfigConsts.DEFAULT_USE_BOM = true;
+    CsvConfigConsts.DEFAULT_HEADER = [];
+    CsvConfigConsts.DEFAULT_KEYS_AS_HEADERS = false;
+    return CsvConfigConsts;
+}());
+exports.CsvConfigConsts = CsvConfigConsts;
+exports.ConfigDefaults = {
+    filename: CsvConfigConsts.DEFAULT_FILENAME,
+    fieldSeparator: CsvConfigConsts.DEFAULT_FIELD_SEPARATOR,
+    quoteStrings: CsvConfigConsts.DEFAULT_QUOTE,
+    decimalSeparator: CsvConfigConsts.DEFAULT_DECIMAL_SEPARATOR,
+    showLabels: CsvConfigConsts.DEFAULT_SHOW_LABELS,
+    showTitle: CsvConfigConsts.DEFAULT_SHOW_TITLE,
+    title: CsvConfigConsts.DEFAULT_TITLE,
+    useTextFile: CsvConfigConsts.DEFAULT_USE_TEXT_FILE,
+    useBom: CsvConfigConsts.DEFAULT_USE_BOM,
+    headers: CsvConfigConsts.DEFAULT_HEADER,
+    useKeysAsHeaders: CsvConfigConsts.DEFAULT_KEYS_AS_HEADERS,
+};
+var ExportToCsv = (function () {
+    function ExportToCsv(options) {
+        this._csv = "";
+        var config = options || {};
+        this._options = objectAssign({}, exports.ConfigDefaults, config);
+        if (this._options.useKeysAsHeaders
+            && this._options.headers
+            && this._options.headers.length > 0) {
+            console.warn('Option to use object keys as headers was set, but headers were still passed!');
+        }
+    }
+    Object.defineProperty(ExportToCsv.prototype, "options", {
+        get: function () {
+            return this._options;
+        },
+        set: function (options) {
+            this._options = objectAssign({}, exports.ConfigDefaults, options);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    /**
+     * Generate and Download Csv
+     */
+    ExportToCsv.prototype.generateCsv = function (jsonData, shouldReturnCsv) {
+        if (shouldReturnCsv === void 0) { shouldReturnCsv = false; }
+        // Make sure to reset csv data on each run
+        this._csv = '';
+        this._parseData(jsonData);
+        if (this._options.useBom) {
+            this._csv += CsvConfigConsts.BOM;
+        }
+        if (this._options.showTitle) {
+            this._csv += this._options.title + '\r\n\n';
+        }
+        this._getHeaders();
+        this._getBody();
+        if (this._csv == '') {
+            console.log("Invalid data");
+            return;
+        }
+        // When the consumer asks for the data, exit the function
+        // by returning the CSV data built at this point
+        if (shouldReturnCsv) {
+            return this._csv;
+        }
+        // Create CSV blob to download if requesting in the browser and the
+        // consumer doesn't set the shouldReturnCsv param
+        var FileType = this._options.useTextFile ? 'plain' : 'csv';
+        var fileExtension = this._options.useTextFile ? '.txt' : '.csv';
+        var blob = new Blob([this._csv], { "type": "text/" + FileType + ";charset=utf8;" });
+        if (navigator.msSaveBlob) {
+            var filename = this._options.filename.replace(/ /g, "_") + fileExtension;
+            navigator.msSaveBlob(blob, filename);
+        }
+        else {
+            var attachmentType = this._options.useTextFile ? 'text' : 'csv';
+            var uri = 'data:attachment/' + attachmentType + ';charset=utf-8,' + encodeURI(this._csv);
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('visibility', 'hidden');
+            link.download = this._options.filename.replace(/ /g, "_") + fileExtension;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+    /**
+     * Create Headers
+     */
+    ExportToCsv.prototype._getHeaders = function () {
+        if (!this._options.showLabels && !this._options.useKeysAsHeaders) {
+            return;
+        }
+        var useKeysAsHeaders = this._options.useKeysAsHeaders;
+        var headers = useKeysAsHeaders ? Object.keys(this._data[0]) : this._options.headers;
+        if (headers.length > 0) {
+            var row = "";
+            for (var keyPos = 0; keyPos < headers.length; keyPos++) {
+                row += headers[keyPos] + this._options.fieldSeparator;
+            }
+            row = row.slice(0, -1);
+            this._csv += row + CsvConfigConsts.EOL;
+        }
+    };
+    /**
+     * Create Body
+     */
+    ExportToCsv.prototype._getBody = function () {
+        var keys = Object.keys(this._data[0]);
+        for (var i = 0; i < this._data.length; i++) {
+            var row = "";
+            for (var keyPos = 0; keyPos < keys.length; keyPos++) {
+                var key = keys[keyPos];
+                row += this._formatData(this._data[i][key]) + this._options.fieldSeparator;
+            }
+            row = row.slice(0, -1);
+            this._csv += row + CsvConfigConsts.EOL;
+        }
+    };
+    /**
+     * Format Data
+     * @param {any} data
+     */
+    ExportToCsv.prototype._formatData = function (data) {
+        if (this._options.decimalSeparator === 'locale' && this._isFloat(data)) {
+            return data.toLocaleString();
+        }
+        if (this._options.decimalSeparator !== '.' && this._isFloat(data)) {
+            return data.toString().replace('.', this._options.decimalSeparator);
+        }
+        if (typeof data === 'string') {
+            data = data.replace(/"/g, '""');
+            if (this._options.quoteStrings || data.indexOf(',') > -1 || data.indexOf('\n') > -1 || data.indexOf('\r') > -1) {
+                data = this._options.quoteStrings + data + this._options.quoteStrings;
+            }
+            return data;
+        }
+        if (typeof data === 'boolean') {
+            return data ? 'TRUE' : 'FALSE';
+        }
+        return data;
+    };
+    /**
+     * Check if is Float
+     * @param {any} input
+     */
+    ExportToCsv.prototype._isFloat = function (input) {
+        return +input === input && (!isFinite(input) || Boolean(input % 1));
+    };
+    /**
+     * Parse the collection given to it
+     *
+     * @private
+     * @param {*} jsonData
+     * @returns {any[]}
+     * @memberof ExportToCsv
+     */
+    ExportToCsv.prototype._parseData = function (jsonData) {
+        this._data = typeof jsonData != 'object' ? JSON.parse(jsonData) : jsonData;
+        return this._data;
+    };
+    return ExportToCsv;
+}());
+exports.ExportToCsv = ExportToCsv;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+/**
+ * Convet to Object
+ * @param {any} val
+ */
+function toObject(val) {
+    if (val === null || val === undefined) {
+        throw new TypeError('Object.assign cannot be called with null or undefined');
+    }
+    return Object(val);
+}
+/**
+ * Assign data  to new Object
+ * @param {any}   target
+ * @param {any[]} ...source
+ */
+function objectAssign(target) {
+    var source = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        source[_i - 1] = arguments[_i];
+    }
+    var from;
+    var to = toObject(target);
+    var symbols;
+    for (var s = 1; s < arguments.length; s++) {
+        from = Object(arguments[s]);
+        for (var key in from) {
+            if (hasOwnProperty.call(from, key)) {
+                to[key] = from[key];
+            }
+        }
+        if (Object.getOwnPropertySymbols) {
+            symbols = Object.getOwnPropertySymbols(from);
+            for (var i = 0; i < symbols.length; i++) {
+                if (propIsEnumerable.call(from, symbols[i])) {
+                    to[symbols[i]] = from[symbols[i]];
+                }
+            }
+        }
+    }
+    return to;
+}
+//# sourceMappingURL=export-to-csv.js.map
+
+/***/ }),
 /* 416 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -31613,7 +31927,7 @@ module.exports = exports
 var assert = __webpack_require__(357);
 var Buffer = __webpack_require__(481).Buffer;
 
-var ASN1 = __webpack_require__(398);
+var ASN1 = __webpack_require__(362);
 var errors = __webpack_require__(584);
 
 
@@ -59299,7 +59613,19 @@ module.exports = getRawTag;
 
 /***/ }),
 /* 986 */,
-/* 987 */,
+/* 987 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(415));
+//# sourceMappingURL=index.js.map
+
+/***/ }),
 /* 988 */
 /***/ (function(module) {
 
@@ -59531,7 +59857,7 @@ module.exports = function (options) {
 
 var assert = __webpack_require__(357);
 var Buffer = __webpack_require__(481).Buffer;
-var ASN1 = __webpack_require__(398);
+var ASN1 = __webpack_require__(362);
 var errors = __webpack_require__(584);
 
 
