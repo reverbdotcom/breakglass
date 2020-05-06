@@ -26,7 +26,7 @@ export function getInput(): Input {
     slackHook: core.getInput('slack_hook', {
       required: true,
     }),
-    posthocApprovalLabel: core.getInput('retroactive_approval_label'),
+    posthocApprovalLabel: core.getInput('posthoc_approval_label'),
     verifiedCILabel: core.getInput('verified_ci_label'),
   };
 }
