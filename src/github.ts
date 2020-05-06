@@ -45,6 +45,30 @@ export async function getMergedEmergencyPRsMissingReview() {
   return data.items.filter(i => i.pull_request);
 }
 
+export async function getClosedInPastWeek() {
+  let date = new Date()
+  date.setDate(date.getDate() - 7)
+  let closedDate = date.toISOString().substr(0, 10)
+  const { data } = await client.search.issuesAndPullRequests({
+    q: [
+      `repo:${REPO_SLUG}`,
+      `state:${CLOSED}`,
+      `closed:>${closedDate}`
+    ].join('+'),
+  });
+
+  return data.items.filter(i => i.pull_request);
+}
+
+export async function getDetailedPR(number) {
+  const { data } = await client.pulls.get({
+    owner,
+    repo,
+    pull_number: number,
+  });
+  return data;
+}
+
 export async function getPRsMissingCIChecks() {
   const { data } = await client.search.issuesAndPullRequests({
     q: [
