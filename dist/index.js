@@ -14292,7 +14292,7 @@ function getInput() {
         slackHook: Object(core.getInput)('slack_hook', {
             required: true,
         }),
-        posthocApprovalLabel: Object(core.getInput)('retroactive_approval_label'),
+        posthocApprovalLabel: Object(core.getInput)('posthoc_approval_label'),
         verifiedCILabel: Object(core.getInput)('verified_ci_label'),
     };
 }
