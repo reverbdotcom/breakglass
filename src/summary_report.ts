@@ -1,6 +1,5 @@
-import * as core from '@actions/core';
 import { getClosedInPastWeek, getDetailedPR } from './github';
-import { ExportToCsv  } from 'export-to-csv';
+import { ExportToCsv } from 'export-to-csv';
 import { postMessage } from './slack';
 
 export async function summaryReport() {
@@ -12,12 +11,11 @@ export async function summaryReport() {
     useTextFile: false,
     useBom: true,
     useKeysAsHeaders: true,
-  }
-
-  const csvExporter = new ExportToCsv(options);
-  let data = []
+  };
 
   try {
+    const csvExporter = new ExportToCsv(options);
+    const data = [];
     const pullRequests = await getClosedInPastWeek();
 
     for(const pr of pullRequests) {
@@ -25,12 +23,14 @@ export async function summaryReport() {
       const row = createRow(detailed_pr);
       data.push(row);
     }
+
+    // For why we pass in true:
+    // https://github.com/alexcaza/export-to-csv/issues/2
+    await postMessage(csvExporter.generateCsv(data, true));
   } catch (error) {
-    let data = "Summary report creation failed! 🔥"
+    await postMessage("Summary report creation failed! 🔥");
+    throw error;
   }
-  // For why we pass in true:
-  // https://github.com/alexcaza/export-to-csv/issues/2
-  await postMessage(csvExporter.generateCsv(data, true));
 }
 
 function createRow(pr) {

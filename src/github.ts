@@ -46,14 +46,14 @@ export async function getMergedEmergencyPRsMissingReview() {
 }
 
 export async function getClosedInPastWeek() {
-  let date = new Date()
-  date.setDate(date.getDate() - 7)
-  let closedDate = date.toISOString().substr(0, 10)
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  const closedDate = date.toISOString().substr(0, 10);
   const { data } = await client.search.issuesAndPullRequests({
     q: [
       `repo:${REPO_SLUG}`,
       `state:${CLOSED}`,
-      `closed:>${closedDate}`
+      `closed:>${closedDate}`,
     ].join('+'),
   });
 

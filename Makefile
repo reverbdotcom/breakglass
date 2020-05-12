@@ -22,7 +22,7 @@ clean: ## remove built files
 
 .PHONY: lint
 lint: ## check for formatting errors
-	eslint --quiet src/**/*.ts
+	eslint --quiet src/**/**/*.ts
 
 .PHONY: test
 test: ## verify functionality
