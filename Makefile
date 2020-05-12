@@ -47,7 +47,7 @@ run-development: ${RUN_DEVELOPMENT_FILE} ${ENV_FILE} ${GITHUB_EVENT_PATH} ## Run
 	env $(ENVIRONMENT) \
 		INPUT_GITHUB_TOKEN=${GITHUB_PACKAGE_PULL_TOKEN} \
 		GITHUB_EVENT_PATH=${GITHUB_EVENT_PATH} \
-		node ./tmp/run-development.js
+		node --inspect ./tmp/run-development.js
 
 help: ## Runs the help!
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

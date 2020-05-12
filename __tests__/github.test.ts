@@ -4,6 +4,10 @@ jest.mock('../src/context');
 import * as nock from 'nock';
 nock.disableNetConnect();
 
+import * as mockdate from 'mockdate'
+// https://bit.ly/3dIr5C5
+mockdate.set('1969-12-05 00:00:00');
+
 import {
   addCommentToIssue,
   getPRsMissingCIChecks,
@@ -11,6 +15,7 @@ import {
   labelIssue,
   tagCIChecksOnPR,
   getStatusOfMaster,
+  getClosedInPastWeek,
 } from '../src/github';
 
 const API = 'https://api.github.com';
@@ -97,6 +102,38 @@ describe('github', () => {
     });
   });
 
+  describe('::getClosedInPastWeek', () => {
+    it('returns closed issues from past week', async () => {
+      expect.assertions(2);
+
+      const firstQuery = 'page=1&q=repo%3Athe-org%2Fthe-repo+state%3Aclosed+closed%3A%3E1969-11-28';
+      nock(API).get(`/search/issues?${firstQuery}`).reply(200, {
+        total_count: 31,
+        items: [{
+          id: 1,
+          name: 'pr 1',
+          pull_request: {},
+        }, {
+          id: 2,
+          name: 'an issue',
+        }],
+      });
+
+      const secondQuery = 'page=2&q=repo%3Athe-org%2Fthe-repo+state%3Aclosed+closed%3A%3E1969-11-28';
+      nock(API).get(`/search/issues?${secondQuery}`).reply(200, {
+        items: [{
+          id: 3,
+          name: 'pr 2',
+          pull_request: {},
+        }],
+      });
+
+      const issues = await getClosedInPastWeek();
+      expect(issues.length).toEqual(3);
+      expect(issues.map(i => i.id)).toEqual([1,2,3])
+    });
+  });
+
   describe('::getPRsMissingCIChecks', () => {
     it('returns prs that have the ci-bypass tag but not the ci-verified tag', async () => {
       expect.assertions(2);
@@ -140,5 +177,4 @@ describe('github', () => {
       expect(prs[0].id).toEqual(1);
     });
   });
-
 });
