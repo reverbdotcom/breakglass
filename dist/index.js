@@ -15912,6 +15912,7 @@ const github_context = getContext();
 const { owner: github_owner, repo: github_repo } = github_context.repo;
 const CLOSED = 'closed';
 const MASTER = 'master';
+const SEARCH_PER_PAGE = 30;
 const client = new github.GitHub(githubToken);
 const REPO_SLUG = `${github_owner}/${github_repo}`;
 function getStatusOfMaster() {
@@ -15944,17 +15945,34 @@ function getMergedEmergencyPRsMissingReview() {
 }
 function getClosedInPastWeek() {
     return github_awaiter(this, void 0, void 0, function* () {
-        let date = new Date();
+        const date = new Date();
         date.setDate(date.getDate() - 7);
-        let closedDate = date.toISOString().substr(0, 10);
-        const { data } = yield client.search.issuesAndPullRequests({
+        const since = date.toISOString().substr(0, 10);
+        return getClosedIssues(since);
+    });
+}
+function getClosedIssues(since, previousIssues = [], page = 1) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data: { items, total_count } } = yield client.search.issuesAndPullRequests({
+            page,
             q: [
                 `repo:${REPO_SLUG}`,
                 `state:${CLOSED}`,
-                `closed:>${closedDate}`
+                `closed:>${since}`,
             ].join('+'),
         });
-        return data.items.filter(i => i.pull_request);
+        const issues = [...previousIssues, ...items];
+        return (total_count > page * SEARCH_PER_PAGE) ? getClosedIssues(since, issues, page + 1) : issues;
+    });
+}
+function getDetailedIssue(number) {
+    return github_awaiter(this, void 0, void 0, function* () {
+        const { data } = yield client.issues.get({
+            owner: github_owner,
+            repo: github_repo,
+            issue_number: number,
+        });
+        return data;
     });
 }
 function getDetailedPR(number) {
@@ -16258,46 +16276,86 @@ var summary_report_awaiter = (undefined && undefined.__awaiter) || function (thi
 
 
 
+const ACCESS_REQUEST = 'access-request';
+const BLANK = '';
+const summary_report_NEWLINE = '\n';
+const CODE_CHANGES = 'code-change';
+const FAILED = 'Summary report creation failed! 🔥';
+const SEPARATOR = ',';
+const WEEKLY_REPORT = ':rolled_up_newspaper: Weekly Report';
+const OPTIONS = {
+    fieldSeparator: ',',
+    quoteStrings: '"',
+    decimalSeparator: '.',
+    showLabels: true,
+    useTextFile: false,
+    useBom: true,
+    useKeysAsHeaders: true,
+};
+const csvExporter = new build.ExportToCsv(OPTIONS);
+// all pull requests are issues, but not all issues are pull requests
+function isPullRequest(prOrIssue) {
+    return !!prOrIssue.pull_request;
+}
 function summaryReport() {
     return summary_report_awaiter(this, void 0, void 0, function* () {
-        const options = {
-            fieldSeparator: ',',
-            quoteStrings: '"',
-            decimalSeparator: '.',
-            showLabels: true,
-            useTextFile: false,
-            useBom: true,
-            useKeysAsHeaders: true,
-        };
-        const csvExporter = new build.ExportToCsv(options);
-        let data = [];
         try {
-            const pullRequests = yield getClosedInPastWeek();
-            for (const pr of pullRequests) {
-                const detailed_pr = yield getDetailedPR(pr.number);
-                const row = createRow(detailed_pr);
-                data.push(row);
+            const rows = [];
+            let issueCount = 0;
+            let prCount = 0;
+            const data = yield getClosedInPastWeek();
+            for (const issue of data) {
+                let row;
+                if (isPullRequest(issue)) {
+                    const pullRequest = yield getDetailedPR(issue.number);
+                    if (!pullRequest.merged)
+                        continue;
+                    row = createRow(true, pullRequest);
+                    prCount++;
+                }
+                else {
+                    const detailedIssue = yield getDetailedIssue(issue.number);
+                    row = createRow(false, detailedIssue);
+                    issueCount++;
+                }
+                rows.push(row);
+            }
+            ;
+            yield postMessage(`${WEEKLY_REPORT} ${prCount} ${CODE_CHANGES}s, ${issueCount} ${ACCESS_REQUEST}s`);
+            if (rows.length) {
+                const csv = csvExporter.generateCsv(rows, true);
+                const report = csv.split(summary_report_NEWLINE).map(line => `> ${line}`).join(summary_report_NEWLINE);
+                yield postMessage(report);
             }
         }
         catch (error) {
-            let data = "Summary report creation failed! 🔥";
+            yield postMessage(FAILED);
+            throw error;
         }
-        // For why we pass in true:
-        // https://github.com/alexcaza/export-to-csv/issues/2
-        yield postMessage(csvExporter.generateCsv(data, true));
     });
 }
-function createRow(pr) {
-    return {
-        url: pr.html_url,
-        title: pr.title,
-        creator: pr.user.login,
-        merged: pr.merged,
-        merged_by: pr.merged_by.login,
-        closed_at: pr.closed_at,
-        labels: pr.labels,
-        review_comments: pr.review_comments,
-    };
+function createRow(isPR, issue) {
+    var _a;
+    const issueDetail = `<${issue.html_url}|${issue.number}>`;
+    return removeUndefines({
+        type: (isPR) ? CODE_CHANGES : ACCESS_REQUEST,
+        project: REPO_SLUG,
+        issue: issueDetail,
+        merge_commit_sha: issue.merge_commit_sha,
+        merged_by: (_a = issue.merged_by) === null || _a === void 0 ? void 0 : _a.login,
+        closed_at: issue.closed_at,
+        labels: issue.labels.map(l => l.name).join(SEPARATOR),
+        review_comments: issue.review_comments,
+        creator: issue.user.login,
+        title: issue.title,
+    });
+}
+function removeUndefines(rows) {
+    for (const key in rows) {
+        if (typeof rows[key] === 'undefined')
+            rows[key] = BLANK;
+    }
+    return rows;
 }
 
 // CONCATENATED MODULE: ./src/run.ts

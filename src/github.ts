@@ -15,6 +15,7 @@ const { owner, repo } = context.repo;
 
 const CLOSED = 'closed';
 const MASTER = 'master';
+const SEARCH_PER_PAGE = 30;
 
 export const client = new github.GitHub(githubToken);
 export const REPO_SLUG = `${owner}/${repo}`;
@@ -46,18 +47,33 @@ export async function getMergedEmergencyPRsMissingReview() {
 }
 
 export async function getClosedInPastWeek() {
-  let date = new Date()
-  date.setDate(date.getDate() - 7)
-  let closedDate = date.toISOString().substr(0, 10)
-  const { data } = await client.search.issuesAndPullRequests({
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  const since = date.toISOString().substr(0, 10);
+  return getClosedIssues(since);
+}
+
+async function getClosedIssues(since, previousIssues = [], page = 1) {
+  const { data: { items, total_count } } = await client.search.issuesAndPullRequests({
+    page,
     q: [
       `repo:${REPO_SLUG}`,
       `state:${CLOSED}`,
-      `closed:>${closedDate}`
+      `closed:>${since}`,
     ].join('+'),
   });
 
-  return data.items.filter(i => i.pull_request);
+  const issues = [...previousIssues, ...items];
+  return (total_count > page * SEARCH_PER_PAGE) ? getClosedIssues(since, issues, page + 1) : issues;
+}
+
+export async function getDetailedIssue(number) {
+  const { data } = await client.issues.get({
+    owner,
+    repo,
+    issue_number: number,
+  });
+  return data;
 }
 
 export async function getDetailedPR(number) {
