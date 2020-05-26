@@ -16252,6 +16252,9 @@ function auditEmergencyMerges() {
     return audit_emergency_merges_awaiter(this, void 0, void 0, function* () {
         const pullRequests = yield getMergedEmergencyPRsMissingReview();
         for (const pr of pullRequests) {
+            const pullRequest = yield getDetailedPR(pr.number);
+            if (!pullRequest.merged)
+                continue;
             yield postMessage(generateMessage(pr));
         }
     });
