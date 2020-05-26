@@ -1,10 +1,15 @@
-import { getMergedEmergencyPRsMissingReview } from './github';
+import {
+  getMergedEmergencyPRsMissingReview,
+  getDetailedPR,
+} from './github';
 import { postMessage } from './slack';
 
 export async function auditEmergencyMerges() {
   const pullRequests = await getMergedEmergencyPRsMissingReview();
 
-  for(const pr of pullRequests) {
+  for (const pr of pullRequests) {
+    const pullRequest = await getDetailedPR(pr.number);
+    if (!pullRequest.merged) continue;
     await postMessage(generateMessage(pr));
   }
 }
