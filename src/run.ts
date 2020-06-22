@@ -5,8 +5,7 @@ import { onIssue } from './on_issue';
 import { getInput } from './input';
 import { getContext } from './context';
 import { retroactivelyMarkPRsWithGreenBuilds } from './retroactively_mark_prs_with_green_builds';
-import { auditEmergencyMerges } from './audit_emergency_merges';
-import { summaryReport } from './summary_report';
+import { checkForReview } from './check_for_review';
 
 const PULL_REQUEST_EVENT_NAME = 'pull_request';
 const ISSUE_EVENT_NAME = 'issues';
@@ -22,7 +21,6 @@ function onCron(cronSchedule) {
 }
 
 const onDaily = onCron('0 0 * * *');
-const onWeekly = onCron('0 0 * * 0');
 
 // Entry point for any GitHub Actions
 export async function run(): Promise<void> {
@@ -37,8 +35,7 @@ export async function run(): Promise<void> {
     switch (context.eventName) {
       case SCHEDULE:
         onDaily(retroactivelyMarkPRsWithGreenBuilds);
-        onDaily(auditEmergencyMerges);
-        onWeekly(summaryReport);
+        onDaily(checkForReview);
         break;
       case PULL_REQUEST_EVENT_NAME:
         onPullRequest(octokit, context, input);

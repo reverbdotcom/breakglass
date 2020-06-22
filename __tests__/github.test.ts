@@ -11,7 +11,7 @@ mockdate.set('1969-12-05 00:00:00');
 import {
   addCommentToIssue,
   getPRsMissingCIChecks,
-  getMergedEmergencyPRsMissingReview,
+  getIssuesMissingReview,
   labelIssue,
   tagCIChecksOnPR,
   getStatusOfMaster,
@@ -172,8 +172,8 @@ describe('github', () => {
         }],
       });
 
-      const prs = await getMergedEmergencyPRsMissingReview();
-      expect(prs.length).toEqual(1);
+      const prs = await getIssuesMissingReview();
+      expect(prs.length).toEqual(2);
       expect(prs[0].id).toEqual(1);
     });
   });
