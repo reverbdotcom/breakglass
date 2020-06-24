@@ -55710,7 +55710,6 @@ function getInput() {
             required: true,
         }),
         posthocApprovalLabel: Object(core.getInput)('posthoc_approval_label'),
-        missingApprovalLabel: Object(core.getInput)('missing_approval_label'),
         verifiedCILabel: Object(core.getInput)('verified_ci_label'),
     };
 }
@@ -56070,7 +56069,7 @@ var check_for_review_awaiter = (undefined && undefined.__awaiter) || function (t
 
 
 
-const { posthocApprovalLabel: check_for_review_posthocApprovalLabel, missingApprovalLabel, } = getInput();
+const { posthocApprovalLabel: check_for_review_posthocApprovalLabel, } = getInput();
 function checkForReview() {
     return check_for_review_awaiter(this, void 0, void 0, function* () {
         const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${check_for_review_posthocApprovalLabel} to approve.`;
@@ -56083,7 +56082,6 @@ function checkForReview() {
                 }
             }
             yield addCommentToIssue(issue.number, msg);
-            yield labelIssue(issue.number, missingApprovalLabel);
             yield postMessage(`${msg} - ${issue.html_url}`);
         })));
     });

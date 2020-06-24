@@ -21,10 +21,6 @@ input:
     description: The label denoting approval after merge
     required: false
     default: verified-peer
-  missing_approval_label:
-    description: The label denoting approval after merge
-    required: false
-    default: missing-peer-verification
   github_token:
     description: Token injected via secrets
     required: true

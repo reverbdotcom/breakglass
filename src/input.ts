@@ -10,7 +10,6 @@ export interface Input {
   posthocApprovalLabel?: string;
   slackHook: string;
   verifiedCILabel: string;
-  missingApprovalLabel?: string;
 }
 
 export function getInput(): Input {
@@ -28,7 +27,6 @@ export function getInput(): Input {
       required: true,
     }),
     posthocApprovalLabel: core.getInput('posthoc_approval_label'),
-    missingApprovalLabel: core.getInput('missing_approval_label'),
     verifiedCILabel: core.getInput('verified_ci_label'),
   };
 }

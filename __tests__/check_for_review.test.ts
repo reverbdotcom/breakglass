@@ -4,7 +4,6 @@ import {
   getIssuesMissingReview,
   addCommentToIssue,
   getDetailedPR,
-  labelIssue,
 } from '../src/github';
 
 import { postMessage } from '../src/slack';
@@ -17,14 +16,11 @@ describe('::checkForReview', () => {
   it('sends a message to slack', async () => {
     mocked(getIssuesMissingReview).mockResolvedValue([{
       html_url: "github.com/pull/23",
+      number: 544,
     } as any]);
 
     mocked(getDetailedPR).mockResolvedValue({
       merged: 'yesterday',
-    } as any);
-
-    mocked(labelIssue).mockResolvedValue({
-      id: 1,
     } as any);
 
     mocked(addCommentToIssue).mockResolvedValue({
@@ -33,6 +29,10 @@ describe('::checkForReview', () => {
 
     await checkForReview();
     expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/missing verification by a peer.*\/23/i));
+    expect(addCommentToIssue).toHaveBeenCalledWith(
+      544,
+      expect.stringMatching(/missing verification by a peer/i),
+    )
   });
 
   it('does not notify of unmerged prs with label', async () => {
@@ -45,14 +45,9 @@ describe('::checkForReview', () => {
       merged: undefined,
     } as any);
 
-    mocked(labelIssue).mockResolvedValue({
-      id: 1,
-    } as any);
-
     mocked(addCommentToIssue).mockResolvedValue({
       id: 1,
     } as any);
-
 
     await checkForReview();
     expect(postMessage).not.toHaveBeenCalled();

@@ -1,6 +1,5 @@
 import {
   addCommentToIssue,
-  labelIssue,
   getIssuesMissingReview,
   getDetailedPR,
 } from './github';
@@ -10,7 +9,6 @@ import { postMessage } from './slack';
 
 const {
   posthocApprovalLabel,
-  missingApprovalLabel,
 } = getInput();
 
 export async function checkForReview() {
@@ -30,7 +28,6 @@ export async function checkForReview() {
       msg,
     );
 
-    await labelIssue(issue.number, missingApprovalLabel);
     await postMessage(`${msg} - ${issue.html_url}`);
   }));
 }
