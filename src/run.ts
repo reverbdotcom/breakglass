@@ -20,7 +20,7 @@ function onCron(cronSchedule) {
   };
 }
 
-const onDaily = onCron('0 0 * * *');
+const onDaily = onCron('* 14 * * *');
 
 // Entry point for any GitHub Actions
 export async function run(): Promise<void> {
