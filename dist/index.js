@@ -56117,7 +56117,7 @@ function onCron(cronSchedule) {
             callback();
     };
 }
-const onDaily = onCron('0 0 * * *');
+const onDaily = onCron('* 14 * * *');
 // Entry point for any GitHub Actions
 function run() {
     return run_awaiter(this, void 0, void 0, function* () {
