@@ -33,17 +33,17 @@ export async function tagCIChecksOnPR(number: number) {
   return labelIssue(number, verifiedCILabel);
 }
 
-export async function getMergedEmergencyPRsMissingReview() {
+export async function getIssuesMissingReview() {
   const { data } = await client.search.issuesAndPullRequests({
     q: [
       `repo:${REPO_SLUG}`,
       `label:${skipApprovalLabel}`,
       `-label:${posthocApprovalLabel}`,
-      `state:${CLOSED}`, // merged
+      `state:${CLOSED}`, // merged or closed
     ].join('+'),
   });
 
-  return data.items.filter(i => i.pull_request);
+  return data.items;
 }
 
 export async function getClosedInPastWeek() {

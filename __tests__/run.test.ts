@@ -55,7 +55,7 @@ describe('::run', () => {
         mockContext({
           eventName: 'schedule',
           payload: {
-            schedule: '0 0 * * *',
+            schedule: '* 14 * * *',
           }
         });
       });

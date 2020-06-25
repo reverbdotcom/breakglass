@@ -20,7 +20,7 @@ input:
   posthoc_approval_label:
     description: The label denoting approval after merge
     required: false
-    default: posthoc-approval
+    default: verified-peer
   github_token:
     description: Token injected via secrets
     required: true
