@@ -1,7 +1,7 @@
 name: 'breakglass'
 description: 'bypass safeguards in an emergency'
 author: 'Reverb LLC'
-input:
+inputs:
   slack_hook:
     description: Slack webhook for announcements
     required: true
