@@ -62,13 +62,14 @@ async function byPassChecks(octokit, issue, sha, checks) {
  */
 async function onLabel(octokit: github.GitHub, context, input: Input) {
   const { issue, payload } = context;
-  const { owner, repo, number } = issue;
+  const { number } = issue;
+  const { html_url } = payload.pull_request;
 
   core.debug(`label event received: ${pp(payload)}`);
   if (payload.label.name === input.skipCILabel) {
     core.debug(`skip_ci_label applied`);
 
-    await postMessage(`Bypassing CI checks for: https://github.com/${owner}/${repo}/${number}`);
+    await postMessage(`Bypassing CI checks for <${html_url}|#${number}>`);
 
     await comment(
       octokit,
@@ -87,7 +88,7 @@ async function onLabel(octokit: github.GitHub, context, input: Input) {
   if (payload.label.name === input.skipApprovalLabel) {
     core.debug(`skip_approval applied`);
 
-    await postMessage(`Bypassing peer approval for: https://github.com/${owner}/${repo}/${number}`);
+    await postMessage(`Bypassing peer approval for <${html_url}|#${number}>`);
 
     await octokit.pulls.createReview({
       owner: issue.owner,

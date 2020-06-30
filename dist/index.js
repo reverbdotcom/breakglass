@@ -55729,17 +55729,17 @@ var github_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _a
 
 const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = getInput();
 const github_context = getContext();
-const { owner: github_owner, repo: github_repo } = github_context.repo;
+const { owner, repo } = github_context.repo;
 const CLOSED = 'closed';
 const MASTER = 'master';
 const SEARCH_PER_PAGE = 30;
 const client = new github.GitHub(githubToken);
-const REPO_SLUG = `${github_owner}/${github_repo}`;
+const REPO_SLUG = `${owner}/${repo}`;
 function getStatusOfMaster() {
     return github_awaiter(this, void 0, void 0, function* () {
         const { data } = yield client.repos.getCombinedStatusForRef({
-            owner: github_owner,
-            repo: github_repo,
+            owner,
+            repo,
             ref: MASTER,
         });
         return data;
@@ -55788,8 +55788,8 @@ function getClosedIssues(since, previousIssues = [], page = 1) {
 function getDetailedIssue(number) {
     return github_awaiter(this, void 0, void 0, function* () {
         const { data } = yield client.issues.get({
-            owner: github_owner,
-            repo: github_repo,
+            owner,
+            repo,
             issue_number: number,
         });
         return data;
@@ -55798,8 +55798,8 @@ function getDetailedIssue(number) {
 function getDetailedPR(number) {
     return github_awaiter(this, void 0, void 0, function* () {
         const { data } = yield client.pulls.get({
-            owner: github_owner,
-            repo: github_repo,
+            owner,
+            repo,
             pull_number: number,
         });
         return data;
@@ -55821,8 +55821,8 @@ function getPRsMissingCIChecks() {
 function labelIssue(number, label) {
     return github_awaiter(this, void 0, void 0, function* () {
         return client.issues.addLabels({
-            owner: github_owner,
-            repo: github_repo,
+            owner,
+            repo,
             issue_number: number,
             labels: [
                 label,
@@ -55833,8 +55833,8 @@ function labelIssue(number, label) {
 function addCommentToIssue(number, body) {
     return github_awaiter(this, void 0, void 0, function* () {
         return client.issues.createComment({
-            owner: github_owner,
-            repo: github_repo,
+            owner,
+            repo,
             issue_number: number,
             body: formatComment(body),
         });
@@ -55913,17 +55913,18 @@ function byPassChecks(octokit, issue, sha, checks) {
 function onLabel(octokit, context, input) {
     return on_pull_request_awaiter(this, void 0, void 0, function* () {
         const { issue, payload } = context;
-        const { owner, repo, number } = issue;
+        const { number } = issue;
+        const { html_url } = payload.pull_request;
         Object(core.debug)(`label event received: ${pp(payload)}`);
         if (payload.label.name === input.skipCILabel) {
             Object(core.debug)(`skip_ci_label applied`);
-            yield postMessage(`Bypassing CI checks for: https://github.com/${owner}/${repo}/${number}`);
+            yield postMessage(`Bypassing CI checks for <${html_url}|#${number}>`);
             yield comment(octokit, issue, `Bypassing CI checks - ${payload.label.name} applied`);
             yield byPassChecks(octokit, issue, payload.pull_request.head.sha, input.requiredChecks);
         }
         if (payload.label.name === input.skipApprovalLabel) {
             Object(core.debug)(`skip_approval applied`);
-            yield postMessage(`Bypassing peer approval for: https://github.com/${owner}/${repo}/${number}`);
+            yield postMessage(`Bypassing peer approval for <${html_url}|#${number}>`);
             yield octokit.pulls.createReview({
                 owner: issue.owner,
                 repo: issue.repo,
