@@ -68,7 +68,15 @@ describe('pull request actions', () => {
       await onPullRequest(
         ghClient,
         {
-          payload: { action: 'labeled', label: { name: 'emergency-approval' } },
+          payload: {
+            action: 'labeled',
+            label: {
+              name: 'emergency-approval'
+            },
+            pull_request: {
+              html_url: "https://github.com/github/my-repo/pull/12",
+            },
+          },
           issue: { owner: 'github', repo: 'my-repo', number: 12 },
           ref: 'f123',
         },
@@ -100,10 +108,23 @@ describe('pull request actions', () => {
         .post('/repos/github/my-repo/statuses/cab4')
         .reply(200, 'okay!')
 
+      const html_url = "https://github.com/my-repo/my-project/pull/234";
       await onPullRequest(
         ghClient,
         {
-          payload: { pull_request: { head: { ref: 'erik/foo', sha: 'cab4' } }, action: 'labeled', label: { name: 'emergency-ci' } },
+          payload: {
+            pull_request: {
+              head: {
+                ref: 'erik/foo',
+                sha: 'cab4',
+              },
+              html_url,
+            },
+            action: 'labeled',
+            label: {
+              name: 'emergency-ci',
+            },
+          },
           issue: { owner: 'github', repo: 'my-repo', number: 12 },
           ref: 'f123',
         },
@@ -113,7 +134,7 @@ describe('pull request actions', () => {
       expect(checkUpdateBody).toEqual({ context: 'ci/circleci: fast_spec', state: 'success' });
       expect(ghCommentBody['body']).toContain('Bypassing CI checks - emergency-ci applied');
       expect(ghCommentBody['body']).toContain('Jan 01 2000 00:00:00');
-      expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/bypassing ci/i));
+      expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`Bypassing CI.*${html_url}`)));
     });
   });
 });
