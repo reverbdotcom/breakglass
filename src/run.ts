@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+
 import { onPullRequest } from './on_pull_request';
 import { onIssue } from './on_issue';
 import { getInput } from './input';
@@ -25,7 +26,7 @@ const onDaily = onCron('* 14 * * *');
 // Entry point for any GitHub Actions
 export async function run(): Promise<void> {
   try {
-    const octokit = new github.GitHub(core.getInput('github_token', {
+    const octokit = github.getOctokit(core.getInput('github_token', {
       required: true,
     }));
 

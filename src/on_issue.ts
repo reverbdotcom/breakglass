@@ -3,19 +3,17 @@ import {
   debug,
 } from '@actions/core';
 
-import {
-  WebhookPayloadLabel,
-  WebhookPayloadIssues,
-} from '@octokit/webhooks';
-
+import * as github from '@actions/github';
 import { postMessage } from './slack';
+
+type Context = typeof github.context;
 
 const LABELED_ACTION = 'labeled';
 const NEWLINE = '\n';
 const RELEVANT_LABELS = getInput('relevant_labels').split(',');
 
-export async function onIssue(context) {
-  const payload = context.payload as WebhookPayloadLabel & WebhookPayloadIssues;
+export async function onIssue(context: Context) {
+  const payload = context.payload;
 
   const {
     action,
