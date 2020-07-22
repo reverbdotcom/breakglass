@@ -13,13 +13,27 @@ nock.disableNetConnect();
 nock('https://api.github.com').log(console.log);
 mockdate.set('2000-1-1 00:00:00');
 
-const ghClient = new github.GitHub('foozles');
+const mockContext = {
+  eventName: 'foo-vent',
+  sha: 'sha-cago',
+  workflow: 'always',
+  action: 'action!',
+  actor: 'clark gable',
+  job: 'the misfits',
+  runNumber: 123,
+  runId: 321,
+  repo: { owner: 'repo', repo: 'man' },
+  issue: { owner: 'repo', repo: 'man' },
+}
+
+const ghClient = github.getOctokit('foozles');
 const input = {
   githubToken: 'the-github-token',
   slackHook: '',
   instructions: 'this is how we pr',
   skipApprovalLabel: 'emergency-approval',
   skipCILabel: 'emergency-ci',
+  posthocApprovalLabel: 'posthoc-approval',
   requiredChecks: [
     'ci/circleci: fast_spec',
     'ci/circleci: js',
@@ -44,6 +58,7 @@ describe('pull request actions', () => {
     await onPullRequest(
       ghClient,
       {
+        ...mockContext,
         payload: { action: 'opened' },
         issue: { owner: 'github', repo: 'my-repo', number: 12 },
         ref: 'f123',
@@ -56,6 +71,46 @@ describe('pull request actions', () => {
   });
 
   describe('on label', () => {
+    it('on label posthoc-approval for issue', async () => {
+      let deleted = false;
+
+      nock('https://api.github.com')
+        .delete('/repos/github/my-repo/issues/12/labels/posthoc-approval', (req) =>  {
+          deleted = true;
+          return true;
+        }).reply(200, 'way to go');
+
+
+      await onPullRequest(
+        ghClient,
+        {
+          ...mockContext,
+          payload: {
+            sender: {
+              type: 'user',
+              id: 42,
+            },
+            action: 'labeled',
+            label: {
+              name: 'posthoc-approval'
+            },
+            pull_request: {
+              html_url: "https://github.com/github/my-repo/pull/12",
+              user: {
+                id: 42,
+              },
+              number: 1,
+            },
+          },
+          issue: { owner: 'github', repo: 'my-repo', number: 12 },
+          ref: 'f123',
+        },
+        input,
+      );
+
+      expect(deleted).toBeTruthy();
+    });
+
     test('on label emergency-approval', async () => {
       let ghReviewBody;
 
@@ -68,6 +123,7 @@ describe('pull request actions', () => {
       await onPullRequest(
         ghClient,
         {
+          ...mockContext,
           payload: {
             action: 'labeled',
             label: {
@@ -75,6 +131,7 @@ describe('pull request actions', () => {
             },
             pull_request: {
               html_url: "https://github.com/github/my-repo/pull/12",
+              number: 1,
             },
           },
           issue: { owner: 'github', repo: 'my-repo', number: 12 },
@@ -112,8 +169,10 @@ describe('pull request actions', () => {
       await onPullRequest(
         ghClient,
         {
+          ...mockContext,
           payload: {
             pull_request: {
+              number: 12,
               head: {
                 ref: 'erik/foo',
                 sha: 'cab4',

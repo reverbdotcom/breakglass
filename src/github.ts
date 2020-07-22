@@ -17,7 +17,7 @@ const CLOSED = 'closed';
 const MASTER = 'master';
 const SEARCH_PER_PAGE = 30;
 
-export const client = new github.GitHub(githubToken);
+export const client = github.getOctokit(githubToken);
 export const REPO_SLUG = `${owner}/${repo}`;
 
 export async function getStatusOfMaster() {

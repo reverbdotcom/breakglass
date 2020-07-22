@@ -20,6 +20,16 @@ function buildContext(context = {} as any) {
 
   return {
     actor: context.actor,
+    eventName: 'foo-vent',
+    sha: 'sha-cago',
+    workflow: 'always',
+    action: 'action!',
+    job: 'the misfits',
+    issue: { number: 10, owner: 'repo', repo: 'man' },
+    runNumber: 123,
+    runId: 321,
+    ref: 'ref',
+    repo: { owner: 'repo', repo: 'man' },
     payload: {
       action: payload.action,
       issue: {

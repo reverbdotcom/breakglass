@@ -3,11 +3,12 @@ jest.mock('./../src/context');
 jest.mock('./../src/on_issue');
 jest.mock('./../src/on_pull_request');
 jest.mock('./../src/retroactively_mark_prs_with_green_builds');
+jest.mock('./../src/check_for_review');
 
 jest.mock('@actions/github', () => {
   return {
-    GitHub: jest.fn(),
-  };
+    getOctokit() { return { } }
+  }
 });
 
 jest.mock('@actions/core', () => {
