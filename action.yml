@@ -24,9 +24,6 @@ inputs:
   github_token:
     description: Token injected via secrets
     required: true
-  relevant_labels:
-    description: When handling issue events, ignore those that don't have these labels. A comma-separated list.
-    required: false
   required_checks:
     description: All required check names
     required: true

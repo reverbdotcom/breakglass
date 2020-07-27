@@ -5,7 +5,7 @@ jest.mock('../src/slack');
 import * as nock from 'nock';
 import * as mockdate from 'mockdate'
 import { postMessage } from '../src/slack';
-import { onPullRequest } from '../src/on_pull_request';
+import { onIssueOrPR } from '../src/on_pull_request';
 import * as github from '@actions/github';
 import * as core from '@actions/core';
 
@@ -55,7 +55,7 @@ describe('pull request actions', () => {
         return true;
       }).reply(200, 'way to go');
 
-    await onPullRequest(
+    await onIssueOrPR(
       ghClient,
       {
         ...mockContext,
@@ -73,6 +73,13 @@ describe('pull request actions', () => {
   describe('on label', () => {
     it('on label posthoc-approval for issue', async () => {
       let deleted = false;
+      let commentBody;
+
+      nock('https://api.github.com')
+        .post('/repos/github/my-repo/issues/12/comments', (req) =>  {
+          commentBody = req.body;
+          return true;
+        }).reply(200, 'way to go');
 
       nock('https://api.github.com')
         .delete('/repos/github/my-repo/issues/12/labels/posthoc-approval', (req) =>  {
@@ -81,7 +88,7 @@ describe('pull request actions', () => {
         }).reply(200, 'way to go');
 
 
-      await onPullRequest(
+      await onIssueOrPR(
         ghClient,
         {
           ...mockContext,
@@ -94,7 +101,7 @@ describe('pull request actions', () => {
             label: {
               name: 'posthoc-approval'
             },
-            pull_request: {
+            issue: {
               html_url: "https://github.com/github/my-repo/pull/12",
               user: {
                 id: 42,
@@ -109,6 +116,7 @@ describe('pull request actions', () => {
       );
 
       expect(deleted).toBeTruthy();
+      expect(commentBody).toMatch(/Removing the label/);
     });
 
     test('on label emergency-approval', async () => {
@@ -120,7 +128,7 @@ describe('pull request actions', () => {
           return true;
         }).reply(200, 'way to go');
 
-      await onPullRequest(
+      await onIssueOrPR(
         ghClient,
         {
           ...mockContext,
@@ -166,7 +174,7 @@ describe('pull request actions', () => {
         .reply(200, 'okay!')
 
       const html_url = "https://github.com/my-repo/my-project/pull/234";
-      await onPullRequest(
+      await onIssueOrPR(
         ghClient,
         {
           ...mockContext,
@@ -193,7 +201,7 @@ describe('pull request actions', () => {
       expect(checkUpdateBody).toEqual({ context: 'ci/circleci: fast_spec', state: 'success' });
       expect(ghCommentBody['body']).toContain('Bypassing CI checks - emergency-ci applied');
       expect(ghCommentBody['body']).toContain('Jan 01 2000 00:00:00');
-      expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`Bypassing CI.*${html_url}`)));
+      expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/emergency-ci/));
     });
   });
 });

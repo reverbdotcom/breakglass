@@ -12,6 +12,9 @@ RUN_DEVELOPMENT_FILE = run-development.ts
 dist/index.js: ${SRC} ## build project
 	ncc build src/index.ts
 
+build:
+	tsc --project ./tsconfig.json
+
 .PHONY: setup
 setup: ## setup project for development
 	yarn
