@@ -14,7 +14,8 @@ all: dist/index.js lib/index.js
 dist/index.js: ${SRC} ## build project
 	ncc build src/index.ts
 
-lib/index.js: ${SRC}
+# this explicit intermediate rule is unnecessary for building dist/index.js, but is useful when developing so you can import specific source files, see also run-development
+lib/index.js: ${SRC} 
 	tsc --project ./tsconfig.json
 
 .PHONY: setup
