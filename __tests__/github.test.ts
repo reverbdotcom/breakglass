@@ -138,15 +138,12 @@ describe('github', () => {
     it('returns prs that have the ci-bypass tag but not the ci-verified tag', async () => {
       expect.assertions(2);
 
-      const q = 'repo%3Athe-org%2Fthe-repo+label%3Athe-skip-ci-label+-label%3Athe-verified-ci-label+state%3Aclosed';
+      const q = 'repo%3Athe-org%2Fthe-repo+label%3Athe-skip-ci-label+type%3Apr+-label%3Athe-verified-ci-label+state%3Aclosed';
       nock(API).get(`/search/issues?q=${q}`).reply(200, {
         items: [{
           id: 1,
           name: 'pr',
           pull_request: {},
-        }, {
-          id: 2,
-          name: 'an issue',
         }],
       });
 

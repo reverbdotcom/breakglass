@@ -422,20 +422,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const github_1 = __webpack_require__(146);
 const input_1 = __webpack_require__(265);
 const slack_1 = __webpack_require__(777);
+const core = __webpack_require__(470);
 const { posthocApprovalLabel, } = input_1.getInput();
 function checkForReview() {
     return __awaiter(this, void 0, void 0, function* () {
         const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${posthocApprovalLabel} to approve.`;
         const issues = yield github_1.getIssuesMissingReview();
+        core.debug(`found ${issues.length}`);
         return Promise.all(issues.map((issue) => __awaiter(this, void 0, void 0, function* () {
             if (issue.pull_request) {
                 const detail = yield github_1.getDetailedPR(issue.number);
                 if (!detail.merged) {
+                    core.debug(`skipping pr: ${issue.html_url} -- never merged`);
                     return;
                 }
             }
+            core.debug(`marking issue as needs review: ${issue.html_url} ${msg}`);
             yield github_1.addCommentToIssue(issue.number, msg);
-            yield slack_1.postMessage(`${msg} - ${issue.html_url}`);
+            return slack_1.postMessage(`${msg} - ${issue.html_url}`);
         })));
     });
 }
@@ -4719,6 +4723,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const github = __webpack_require__(469);
+const core = __webpack_require__(470);
 const context_1 = __webpack_require__(204);
 const input_1 = __webpack_require__(265);
 const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = input_1.getInput();
@@ -4727,7 +4732,7 @@ const { owner, repo } = context.repo;
 const CLOSED = 'closed';
 const MASTER = 'master';
 const SEARCH_PER_PAGE = 30;
-exports.client = github.getOctokit(githubToken);
+exports.client = github.getOctokit(githubToken || process.env.GITHUB_TOKEN);
 exports.REPO_SLUG = `${owner}/${repo}`;
 function getStatusOfMaster() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -4748,14 +4753,14 @@ function tagCIChecksOnPR(number) {
 exports.tagCIChecksOnPR = tagCIChecksOnPR;
 function getIssuesMissingReview() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { data } = yield exports.client.search.issuesAndPullRequests({
-            q: [
-                `repo:${exports.REPO_SLUG}`,
-                `label:${skipApprovalLabel}`,
-                `-label:${posthocApprovalLabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
-        });
+        const q = [
+            `repo:${exports.REPO_SLUG}`,
+            `label:${skipApprovalLabel}`,
+            `-label:${posthocApprovalLabel}`,
+            `state:${CLOSED}`,
+        ].join('+');
+        core.debug(`searching for issues with query ${q}`);
+        const { data } = yield exports.client.search.issuesAndPullRequests({ q });
         return data.items;
     });
 }
@@ -4807,15 +4812,19 @@ function getDetailedPR(number) {
 exports.getDetailedPR = getDetailedPR;
 function getPRsMissingCIChecks() {
     return __awaiter(this, void 0, void 0, function* () {
+        const q = [
+            `repo:${exports.REPO_SLUG}`,
+            `label:${skipCILabel}`,
+            'type:pr',
+            `-label:${verifiedCILabel}`,
+            `state:${CLOSED}`,
+        ].join('+');
+        core.debug(`searching for prs ${q}`);
         const { data } = yield exports.client.search.issuesAndPullRequests({
-            q: [
-                `repo:${exports.REPO_SLUG}`,
-                `label:${skipCILabel}`,
-                `-label:${verifiedCILabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
+            q,
         });
-        return data.items.filter(i => i.pull_request);
+        core.debug(`got matches: ${data.total_count}`);
+        return data.items;
     });
 }
 exports.getPRsMissingCIChecks = getPRsMissingCIChecks;
@@ -10386,20 +10395,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 function getInput() {
     return {
-        githubToken: core.getInput('github_token', {
-            required: true,
-        }),
+        githubToken: core.getInput('github_token'),
         instructions: core.getInput('instructions'),
-        requiredChecks: core.getInput('required_checks', {
-            required: true,
-        }).split(','),
-        skipApprovalLabel: core.getInput('skip_approval_label'),
-        skipCILabel: core.getInput('skip_ci_label'),
-        slackHook: core.getInput('slack_hook', {
-            required: true,
-        }),
-        posthocApprovalLabel: core.getInput('posthoc_approval_label'),
-        verifiedCILabel: core.getInput('verified_ci_label'),
+        requiredChecks: core.getInput('required_checks').split(','),
+        skipApprovalLabel: core.getInput('skip_approval_label') || 'emergency-approval',
+        skipCILabel: core.getInput('skip_ci_label') || 'emergency-ci',
+        slackHook: core.getInput('slack_hook'),
+        posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
+        verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
     };
 }
 exports.getInput = getInput;
@@ -29888,16 +29891,18 @@ function retroactivelyMarkPRsWithGreenBuilds() {
             return;
         const { state, sha } = yield github_1.getStatusOfMaster();
         if (state !== SUCCESS) {
-            yield slack_1.postMessage(FAILED_MASTER);
-            return;
+            return slack_1.postMessage(FAILED_MASTER);
         }
         ;
         const message = `Code from this PR has passed all checks.\n\n${sha}`;
-        yield pullRequests.forEach((pullRequest) => __awaiter(this, void 0, void 0, function* () {
+        const all = pullRequests.map((pullRequest) => __awaiter(this, void 0, void 0, function* () {
             const { number } = pullRequest;
-            yield github_1.addCommentToIssue(number, message);
-            yield github_1.tagCIChecksOnPR(pullRequest.number);
+            return Promise.all([
+                github_1.addCommentToIssue(number, message),
+                github_1.tagCIChecksOnPR(pullRequest.number),
+            ]);
         }));
+        return Promise.all(all);
     });
 }
 exports.retroactivelyMarkPRsWithGreenBuilds = retroactivelyMarkPRsWithGreenBuilds;
@@ -32994,12 +32999,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const request = __webpack_require__(375);
 const core = __webpack_require__(470);
-const hook = core.getInput('slack_hook', {
-    required: true,
-});
+const hook = core.getInput('slack_hook');
 function postMessage(text) {
     return __awaiter(this, void 0, void 0, function* () {
-        request({
+        if (!hook) {
+            core.debug(`skipping slack hook ${text}, hook not defined`);
+            return;
+        }
+        return request({
             uri: hook,
             method: 'POST',
             body: {

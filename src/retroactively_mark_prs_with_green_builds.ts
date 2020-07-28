@@ -19,15 +19,18 @@ export async function retroactivelyMarkPRsWithGreenBuilds() {
 
   const { state, sha } = await getStatusOfMaster();
   if (state !== SUCCESS) {
-    await postMessage(FAILED_MASTER);
-    return;
+    return postMessage(FAILED_MASTER);
   };
 
   const message = `Code from this PR has passed all checks.\n\n${sha}`;
 
-  await pullRequests.forEach(async (pullRequest) => {
+  const all = pullRequests.map(async (pullRequest) => {
     const { number } = pullRequest;
-    await addCommentToIssue(number, message);
-    await tagCIChecksOnPR(pullRequest.number);
+    return Promise.all([
+      addCommentToIssue(number, message),
+      tagCIChecksOnPR(pullRequest.number),
+    ]);
   });
+
+  return Promise.all(all);
 }

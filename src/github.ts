@@ -1,4 +1,6 @@
 import * as github from '@actions/github';
+import * as core from '@actions/core';
+
 import { getContext } from './context';
 import { getInput } from './input';
 
@@ -17,7 +19,10 @@ const CLOSED = 'closed';
 const MASTER = 'master';
 const SEARCH_PER_PAGE = 30;
 
-export const client = github.getOctokit(githubToken);
+export const client = github.getOctokit(
+  githubToken || process.env.GITHUB_TOKEN
+);
+
 export const REPO_SLUG = `${owner}/${repo}`;
 
 export async function getStatusOfMaster() {
@@ -34,14 +39,16 @@ export async function tagCIChecksOnPR(number: number) {
 }
 
 export async function getIssuesMissingReview() {
-  const { data } = await client.search.issuesAndPullRequests({
-    q: [
-      `repo:${REPO_SLUG}`,
-      `label:${skipApprovalLabel}`,
-      `-label:${posthocApprovalLabel}`,
-      `state:${CLOSED}`, // merged or closed
-    ].join('+'),
-  });
+  const q = [
+    `repo:${REPO_SLUG}`,
+    `label:${skipApprovalLabel}`,
+    `-label:${posthocApprovalLabel}`,
+    `state:${CLOSED}`, // merged or closed
+  ].join('+');
+
+  core.debug(`searching for issues with query ${q}`);
+  const { data } = await client.search.issuesAndPullRequests({ q });
+
 
   return data.items;
 }
@@ -86,16 +93,21 @@ export async function getDetailedPR(number) {
 }
 
 export async function getPRsMissingCIChecks() {
+  const q = [
+    `repo:${REPO_SLUG}`,
+    `label:${skipCILabel}`,
+    'type:pr',
+    `-label:${verifiedCILabel}`,
+    `state:${CLOSED}`, // merged
+  ].join('+');
+
+  core.debug(`searching for prs ${q}`);
   const { data } = await client.search.issuesAndPullRequests({
-    q: [
-      `repo:${REPO_SLUG}`,
-      `label:${skipCILabel}`,
-      `-label:${verifiedCILabel}`,
-      `state:${CLOSED}`, // merged
-    ].join('+'),
+    q,
   });
 
-  return data.items.filter(i => i.pull_request);
+  core.debug(`got matches: ${data.total_count}`);
+  return data.items;
 }
 
 export async function labelIssue(number: number, label: string) {
