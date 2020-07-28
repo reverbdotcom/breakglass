@@ -41,7 +41,9 @@ async function onLabel(octokit: GitHubClient, context: Context, input: Input) {
   const { number, html_url } = issue;
 
   core.debug(`label event received for ${number} - ${html_url}`);
-  postMessage(`<${html_url}|#${number}> (${repo.repo}) _*${label.name}*_ by ${actor}`);
+  const alertLabelApplied = () => (
+    postMessage(`<${html_url}|#${number}> (${repo.repo}) _*${label.name}*_ by ${actor}`)
+  );
 
   switch(label.name) {
     case input.skipCILabel:
@@ -50,6 +52,7 @@ async function onLabel(octokit: GitHubClient, context: Context, input: Input) {
         return;
       }
 
+      await alertLabelApplied();
       await onSkipCILabel(
         octokit,
         context,
@@ -58,9 +61,11 @@ async function onLabel(octokit: GitHubClient, context: Context, input: Input) {
       );
       break;
     case input.skipApprovalLabel:
+      await alertLabelApplied();
       await onEmergencyApprovalLabel(octokit, context, label.name);
       break;
     case input.posthocApprovalLabel:
+      await alertLabelApplied();
       await onPosthocApprovalLabel(octokit, context, label.name);
       break;
     default:

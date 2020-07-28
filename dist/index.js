@@ -39518,19 +39518,22 @@ function onLabel(octokit, context, input) {
         const issue = context.payload.issue || context.payload.pull_request;
         const { number, html_url } = issue;
         core.debug(`label event received for ${number} - ${html_url}`);
-        slack_1.postMessage(`<${html_url}|#${number}> (${repo.repo}) _*${label.name}*_ by ${actor}`);
+        const alertLabelApplied = () => (slack_1.postMessage(`<${html_url}|#${number}> (${repo.repo}) _*${label.name}*_ by ${actor}`));
         switch (label.name) {
             case input.skipCILabel:
                 if (!context.payload.pull_request) {
                     core.debug('skipping ci label for non pull request');
                     return;
                 }
+                yield alertLabelApplied();
                 yield onSkipCILabel(octokit, context, label.name, input.requiredChecks);
                 break;
             case input.skipApprovalLabel:
+                yield alertLabelApplied();
                 yield onEmergencyApprovalLabel(octokit, context, label.name);
                 break;
             case input.posthocApprovalLabel:
+                yield alertLabelApplied();
                 yield onPosthocApprovalLabel(octokit, context, label.name);
                 break;
             default:
