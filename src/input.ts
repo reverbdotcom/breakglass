@@ -14,19 +14,13 @@ export interface Input {
 
 export function getInput(): Input {
   return {
-    githubToken: core.getInput('github_token', {
-      required: true,
-    }),
+    githubToken: core.getInput('github_token'),
     instructions: core.getInput('instructions'),
-    requiredChecks: core.getInput('required_checks', {
-      required: true,
-    }).split(','),
-    skipApprovalLabel: core.getInput('skip_approval_label'),
-    skipCILabel: core.getInput('skip_ci_label'),
-    slackHook: core.getInput('slack_hook', {
-      required: true,
-    }),
-    posthocApprovalLabel: core.getInput('posthoc_approval_label'),
-    verifiedCILabel: core.getInput('verified_ci_label'),
+    requiredChecks: core.getInput('required_checks').split(','),
+    skipApprovalLabel: core.getInput('skip_approval_label') || 'emergency-approval',
+    skipCILabel: core.getInput('skip_ci_label') || 'emergency-ci',
+    slackHook: core.getInput('slack_hook'),
+    posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
+    verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
   };
 }

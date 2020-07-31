@@ -9,8 +9,14 @@ ENVIRONMENT = `cat .env | xargs`
 EXAMPLE_RUN_DEVELOPMENT_FILE = run-development.example.ts
 RUN_DEVELOPMENT_FILE = run-development.ts
 
+all: dist/index.js lib/index.js
+
 dist/index.js: ${SRC} ## build project
 	ncc build src/index.ts
+
+# this explicit intermediate rule is unnecessary for building dist/index.js, but is useful when developing so you can import specific source files, see also run-development
+lib/index.js: ${SRC} 
+	tsc --project ./tsconfig.json
 
 .PHONY: setup
 setup: ## setup project for development
@@ -19,6 +25,7 @@ setup: ## setup project for development
 .PHONY: clean
 clean: ## remove built files
 	rm -rf dist/*
+	rm -rf lib/*
 
 .PHONY: lint
 lint: ## check for formatting errors

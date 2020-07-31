@@ -1,8 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-import { onPullRequest } from './on_pull_request';
-import { onIssue } from './on_issue';
+import { onIssueOrPR } from './on_pull_request';
 import { getInput } from './input';
 import { getContext } from './context';
 import { retroactivelyMarkPRsWithGreenBuilds } from './retroactively_mark_prs_with_green_builds';
@@ -13,36 +12,24 @@ const ISSUE_EVENT_NAME = 'issues';
 const SCHEDULE = 'schedule';
 const UNSUPPORTED_EVENT = 'Workflow triggered by an unsupported event';
 
-function onCron(cronSchedule) {
-  return (callback) => {
-    const { payload } = getContext();
-    const { schedule } = payload;
-    if (cronSchedule === schedule) callback();
-  };
-}
-
-const onDaily = onCron('* 14 * * *');
-
-// Entry point for any GitHub Actions
 export async function run(): Promise<void> {
   try {
-    const octokit = github.getOctokit(core.getInput('github_token', {
-      required: true,
-    }));
-
     const input = getInput();
-    const context = getContext();
+    const octokit = github.getOctokit(input.githubToken);
 
+    const context = getContext();
     switch (context.eventName) {
       case SCHEDULE:
-        onDaily(retroactivelyMarkPRsWithGreenBuilds);
-        onDaily(checkForReview);
+        await Promise.all([
+          checkForReview(),
+          retroactivelyMarkPRsWithGreenBuilds(),
+        ]);
         break;
       case PULL_REQUEST_EVENT_NAME:
-        onPullRequest(octokit, context, input);
+        await onIssueOrPR(octokit, context, input);
         break;
       case ISSUE_EVENT_NAME:
-        onIssue(context);
+        await onIssueOrPR(octokit, context, input);
         break;
       default:
         core.setFailed(UNSUPPORTED_EVENT);

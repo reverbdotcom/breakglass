@@ -1,11 +1,16 @@
 {
-    "compilerOptions": {
-        "moduleResolution": "node",
-        "target": "es6",
-        "esModuleInterop": false
-    },
-    "exclude": [
-        "node_modules",
-        "**/*.test.ts"
-    ]
+  "compilerOptions": {
+    "outDir": "./lib",
+    "moduleResolution": "node",
+    "target": "es6",
+    "module": "CommonJS",
+    "esModuleInterop": false
+  },
+  "include": [
+    "./src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts"
+  ]
 }

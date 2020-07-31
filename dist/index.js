@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(935);
+/******/ 		return __webpack_require__(325);
 /******/ 	};
 /******/ 	// initialize runtime
 /******/ 	runtime(__webpack_require__);
@@ -404,7 +404,49 @@ module.exports = function generate_comment(it, $keyword, $ruleType) {
 
 
 /***/ }),
-/* 29 */,
+/* 29 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const github_1 = __webpack_require__(146);
+const input_1 = __webpack_require__(265);
+const slack_1 = __webpack_require__(777);
+const core = __webpack_require__(470);
+const { posthocApprovalLabel, } = input_1.getInput();
+function checkForReview() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${posthocApprovalLabel} to approve.`;
+        const issues = yield github_1.getIssuesMissingReview();
+        core.debug(`found ${issues.length}`);
+        return Promise.all(issues.map((issue) => __awaiter(this, void 0, void 0, function* () {
+            if (issue.pull_request) {
+                const detail = yield github_1.getDetailedPR(issue.number);
+                if (!detail.merged) {
+                    core.debug(`skipping pr: ${issue.html_url} -- never merged`);
+                    return;
+                }
+            }
+            core.debug(`marking issue as needs review: ${issue.html_url} ${msg}`);
+            yield github_1.addCommentToIssue(issue.number, msg);
+            return slack_1.postMessage(`${msg} - ${issue.html_url}`);
+        })));
+    });
+}
+exports.checkForReview = checkForReview;
+
+
+/***/ }),
 /* 30 */,
 /* 31 */,
 /* 32 */,
@@ -2754,7 +2796,223 @@ module.exports = {
 
 /***/ }),
 /* 65 */,
-/* 66 */,
+/* 66 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(581);
+var formats = __webpack_require__(13);
+
+var arrayPrefixGenerators = {
+    brackets: function brackets(prefix) { // eslint-disable-line func-name-matching
+        return prefix + '[]';
+    },
+    indices: function indices(prefix, key) { // eslint-disable-line func-name-matching
+        return prefix + '[' + key + ']';
+    },
+    repeat: function repeat(prefix) { // eslint-disable-line func-name-matching
+        return prefix;
+    }
+};
+
+var toISO = Date.prototype.toISOString;
+
+var defaults = {
+    delimiter: '&',
+    encode: true,
+    encoder: utils.encode,
+    encodeValuesOnly: false,
+    serializeDate: function serializeDate(date) { // eslint-disable-line func-name-matching
+        return toISO.call(date);
+    },
+    skipNulls: false,
+    strictNullHandling: false
+};
+
+var stringify = function stringify( // eslint-disable-line func-name-matching
+    object,
+    prefix,
+    generateArrayPrefix,
+    strictNullHandling,
+    skipNulls,
+    encoder,
+    filter,
+    sort,
+    allowDots,
+    serializeDate,
+    formatter,
+    encodeValuesOnly
+) {
+    var obj = object;
+    if (typeof filter === 'function') {
+        obj = filter(prefix, obj);
+    } else if (obj instanceof Date) {
+        obj = serializeDate(obj);
+    } else if (obj === null) {
+        if (strictNullHandling) {
+            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder) : prefix;
+        }
+
+        obj = '';
+    }
+
+    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean' || utils.isBuffer(obj)) {
+        if (encoder) {
+            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder);
+            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder))];
+        }
+        return [formatter(prefix) + '=' + formatter(String(obj))];
+    }
+
+    var values = [];
+
+    if (typeof obj === 'undefined') {
+        return values;
+    }
+
+    var objKeys;
+    if (Array.isArray(filter)) {
+        objKeys = filter;
+    } else {
+        var keys = Object.keys(obj);
+        objKeys = sort ? keys.sort(sort) : keys;
+    }
+
+    for (var i = 0; i < objKeys.length; ++i) {
+        var key = objKeys[i];
+
+        if (skipNulls && obj[key] === null) {
+            continue;
+        }
+
+        if (Array.isArray(obj)) {
+            values = values.concat(stringify(
+                obj[key],
+                generateArrayPrefix(prefix, key),
+                generateArrayPrefix,
+                strictNullHandling,
+                skipNulls,
+                encoder,
+                filter,
+                sort,
+                allowDots,
+                serializeDate,
+                formatter,
+                encodeValuesOnly
+            ));
+        } else {
+            values = values.concat(stringify(
+                obj[key],
+                prefix + (allowDots ? '.' + key : '[' + key + ']'),
+                generateArrayPrefix,
+                strictNullHandling,
+                skipNulls,
+                encoder,
+                filter,
+                sort,
+                allowDots,
+                serializeDate,
+                formatter,
+                encodeValuesOnly
+            ));
+        }
+    }
+
+    return values;
+};
+
+module.exports = function (object, opts) {
+    var obj = object;
+    var options = opts ? utils.assign({}, opts) : {};
+
+    if (options.encoder !== null && options.encoder !== undefined && typeof options.encoder !== 'function') {
+        throw new TypeError('Encoder has to be a function.');
+    }
+
+    var delimiter = typeof options.delimiter === 'undefined' ? defaults.delimiter : options.delimiter;
+    var strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults.strictNullHandling;
+    var skipNulls = typeof options.skipNulls === 'boolean' ? options.skipNulls : defaults.skipNulls;
+    var encode = typeof options.encode === 'boolean' ? options.encode : defaults.encode;
+    var encoder = typeof options.encoder === 'function' ? options.encoder : defaults.encoder;
+    var sort = typeof options.sort === 'function' ? options.sort : null;
+    var allowDots = typeof options.allowDots === 'undefined' ? false : options.allowDots;
+    var serializeDate = typeof options.serializeDate === 'function' ? options.serializeDate : defaults.serializeDate;
+    var encodeValuesOnly = typeof options.encodeValuesOnly === 'boolean' ? options.encodeValuesOnly : defaults.encodeValuesOnly;
+    if (typeof options.format === 'undefined') {
+        options.format = formats['default'];
+    } else if (!Object.prototype.hasOwnProperty.call(formats.formatters, options.format)) {
+        throw new TypeError('Unknown format option provided.');
+    }
+    var formatter = formats.formatters[options.format];
+    var objKeys;
+    var filter;
+
+    if (typeof options.filter === 'function') {
+        filter = options.filter;
+        obj = filter('', obj);
+    } else if (Array.isArray(options.filter)) {
+        filter = options.filter;
+        objKeys = filter;
+    }
+
+    var keys = [];
+
+    if (typeof obj !== 'object' || obj === null) {
+        return '';
+    }
+
+    var arrayFormat;
+    if (options.arrayFormat in arrayPrefixGenerators) {
+        arrayFormat = options.arrayFormat;
+    } else if ('indices' in options) {
+        arrayFormat = options.indices ? 'indices' : 'repeat';
+    } else {
+        arrayFormat = 'indices';
+    }
+
+    var generateArrayPrefix = arrayPrefixGenerators[arrayFormat];
+
+    if (!objKeys) {
+        objKeys = Object.keys(obj);
+    }
+
+    if (sort) {
+        objKeys.sort(sort);
+    }
+
+    for (var i = 0; i < objKeys.length; ++i) {
+        var key = objKeys[i];
+
+        if (skipNulls && obj[key] === null) {
+            continue;
+        }
+
+        keys = keys.concat(stringify(
+            obj[key],
+            key,
+            generateArrayPrefix,
+            strictNullHandling,
+            skipNulls,
+            encode ? encoder : null,
+            filter,
+            sort,
+            allowDots,
+            serializeDate,
+            formatter,
+            encodeValuesOnly
+        ));
+    }
+
+    var joined = keys.join(delimiter);
+    var prefix = options.addQueryPrefix === true ? '?' : '';
+
+    return joined.length > 0 ? prefix + joined : '';
+};
+
+
+/***/ }),
 /* 67 */,
 /* 68 */,
 /* 69 */
@@ -4449,7 +4707,159 @@ module.exports.MaxBufferError = MaxBufferError;
 
 
 /***/ }),
-/* 146 */,
+/* 146 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const github = __webpack_require__(469);
+const core = __webpack_require__(470);
+const context_1 = __webpack_require__(204);
+const input_1 = __webpack_require__(265);
+const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = input_1.getInput();
+const context = context_1.getContext();
+const { owner, repo } = context.repo;
+const CLOSED = 'closed';
+const MASTER = 'master';
+const SEARCH_PER_PAGE = 30;
+exports.client = github.getOctokit(githubToken || process.env.GITHUB_TOKEN);
+exports.REPO_SLUG = `${owner}/${repo}`;
+function getStatusOfMaster() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data } = yield exports.client.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref: MASTER,
+        });
+        return data;
+    });
+}
+exports.getStatusOfMaster = getStatusOfMaster;
+function tagCIChecksOnPR(number) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return labelIssue(number, verifiedCILabel);
+    });
+}
+exports.tagCIChecksOnPR = tagCIChecksOnPR;
+function getIssuesMissingReview() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const q = [
+            `repo:${exports.REPO_SLUG}`,
+            `label:${skipApprovalLabel}`,
+            `-label:${posthocApprovalLabel}`,
+            `state:${CLOSED}`,
+        ].join('+');
+        core.debug(`searching for issues with query ${q}`);
+        const { data } = yield exports.client.search.issuesAndPullRequests({ q });
+        return data.items;
+    });
+}
+exports.getIssuesMissingReview = getIssuesMissingReview;
+function getClosedInPastWeek() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        const since = date.toISOString().substr(0, 10);
+        return getClosedIssues(since);
+    });
+}
+exports.getClosedInPastWeek = getClosedInPastWeek;
+function getClosedIssues(since, previousIssues = [], page = 1) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: { items, total_count } } = yield exports.client.search.issuesAndPullRequests({
+            page,
+            q: [
+                `repo:${exports.REPO_SLUG}`,
+                `state:${CLOSED}`,
+                `closed:>${since}`,
+            ].join('+'),
+        });
+        const issues = [...previousIssues, ...items];
+        return (total_count > page * SEARCH_PER_PAGE) ? getClosedIssues(since, issues, page + 1) : issues;
+    });
+}
+function getDetailedIssue(number) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data } = yield exports.client.issues.get({
+            owner,
+            repo,
+            issue_number: number,
+        });
+        return data;
+    });
+}
+exports.getDetailedIssue = getDetailedIssue;
+function getDetailedPR(number) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data } = yield exports.client.pulls.get({
+            owner,
+            repo,
+            pull_number: number,
+        });
+        return data;
+    });
+}
+exports.getDetailedPR = getDetailedPR;
+function getPRsMissingCIChecks() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const q = [
+            `repo:${exports.REPO_SLUG}`,
+            `label:${skipCILabel}`,
+            'type:pr',
+            `-label:${verifiedCILabel}`,
+            `state:${CLOSED}`,
+        ].join('+');
+        core.debug(`searching for prs ${q}`);
+        const { data } = yield exports.client.search.issuesAndPullRequests({
+            q,
+        });
+        core.debug(`got matches: ${data.total_count}`);
+        return data.items;
+    });
+}
+exports.getPRsMissingCIChecks = getPRsMissingCIChecks;
+function labelIssue(number, label) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return exports.client.issues.addLabels({
+            owner,
+            repo,
+            issue_number: number,
+            labels: [
+                label,
+            ],
+        });
+    });
+}
+exports.labelIssue = labelIssue;
+function addCommentToIssue(number, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return exports.client.issues.createComment({
+            owner,
+            repo,
+            issue_number: number,
+            body: formatComment(body),
+        });
+    });
+}
+exports.addCommentToIssue = addCommentToIssue;
+function formatComment(body) {
+    const now = new Date().toString();
+    return `${body}\n\n---\n${now}`;
+}
+exports.formatComment = formatComment;
+
+
+/***/ }),
 /* 147 */
 /***/ (function(module) {
 
@@ -5027,7 +5437,65 @@ function DoublyLinkedNode(key, val) {
 
 /***/ }),
 /* 179 */,
-/* 180 */,
+/* 180 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+const on_pull_request_1 = __webpack_require__(897);
+const input_1 = __webpack_require__(265);
+const context_1 = __webpack_require__(204);
+const retroactively_mark_prs_with_green_builds_1 = __webpack_require__(705);
+const check_for_review_1 = __webpack_require__(29);
+const PULL_REQUEST_EVENT_NAME = 'pull_request';
+const ISSUE_EVENT_NAME = 'issues';
+const SCHEDULE = 'schedule';
+const UNSUPPORTED_EVENT = 'Workflow triggered by an unsupported event';
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const input = input_1.getInput();
+            const octokit = github.getOctokit(input.githubToken);
+            const context = context_1.getContext();
+            switch (context.eventName) {
+                case SCHEDULE:
+                    yield Promise.all([
+                        check_for_review_1.checkForReview(),
+                        retroactively_mark_prs_with_green_builds_1.retroactivelyMarkPRsWithGreenBuilds(),
+                    ]);
+                    break;
+                case PULL_REQUEST_EVENT_NAME:
+                    yield on_pull_request_1.onIssueOrPR(octokit, context, input);
+                    break;
+                case ISSUE_EVENT_NAME:
+                    yield on_pull_request_1.onIssueOrPR(octokit, context, input);
+                    break;
+                default:
+                    core.setFailed(UNSUPPORTED_EVENT);
+            }
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            core.debug(error.stack);
+        }
+    });
+}
+exports.run = run;
+
+
+/***/ }),
 /* 181 */
 /***/ (function(module) {
 
@@ -7500,7 +7968,21 @@ function checkMode (stat, options) {
 /* 201 */,
 /* 202 */,
 /* 203 */,
-/* 204 */,
+/* 204 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// wrapper to make testing simpler
+Object.defineProperty(exports, "__esModule", { value: true });
+const github = __webpack_require__(469);
+function getContext() {
+    return github.context;
+}
+exports.getContext = getContext;
+
+
+/***/ }),
 /* 205 */,
 /* 206 */,
 /* 207 */,
@@ -9903,7 +10385,30 @@ exports.Context = Context;
 /***/ }),
 /* 263 */,
 /* 264 */,
-/* 265 */,
+/* 265 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+// see action.yml for more details
+const core = __webpack_require__(470);
+function getInput() {
+    return {
+        githubToken: core.getInput('github_token'),
+        instructions: core.getInput('instructions'),
+        requiredChecks: core.getInput('required_checks').split(','),
+        skipApprovalLabel: core.getInput('skip_approval_label') || 'emergency-approval',
+        skipCILabel: core.getInput('skip_ci_label') || 'emergency-ci',
+        slackHook: core.getInput('slack_hook'),
+        posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
+        verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
+    };
+}
+exports.getInput = getInput;
+
+
+/***/ }),
 /* 266 */
 /***/ (function(module) {
 
@@ -11977,7 +12482,17 @@ isStream.transform = function (stream) {
 
 /***/ }),
 /* 324 */,
-/* 325 */,
+/* 325 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const run_1 = __webpack_require__(180);
+run_1.run();
+
+
+/***/ }),
 /* 326 */
 /***/ (function(module) {
 
@@ -15101,7 +15616,7 @@ exports.endpoint = endpoint;
 "use strict";
 
 
-var stringify = __webpack_require__(897);
+var stringify = __webpack_require__(66);
 var parse = __webpack_require__(755);
 var formats = __webpack_require__(13);
 
@@ -16268,42 +16783,7 @@ function dumpException(ex)
 /* 441 */,
 /* 442 */,
 /* 443 */,
-/* 444 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-var baseGetTag = __webpack_require__(51),
-    isArray = __webpack_require__(143),
-    isObjectLike = __webpack_require__(337);
-
-/** `Object#toString` result references. */
-var stringTag = '[object String]';
-
-/**
- * Checks if `value` is classified as a `String` primitive or object.
- *
- * @static
- * @since 0.1.0
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a string, else `false`.
- * @example
- *
- * _.isString('abc');
- * // => true
- *
- * _.isString(1);
- * // => false
- */
-function isString(value) {
-  return typeof value == 'string' ||
-    (!isArray(value) && isObjectLike(value) && baseGetTag(value) == stringTag);
-}
-
-module.exports = isString;
-
-
-/***/ }),
+/* 444 */,
 /* 445 */,
 /* 446 */,
 /* 447 */,
@@ -29383,7 +29863,52 @@ function serializer(replacer, cycleReplacer) {
 
 
 /***/ }),
-/* 705 */,
+/* 705 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// when a pr has bypassed ci checks, this goes back to mark that master become green at some point after,
+// i.e. that a broken app isn't sitting in production
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const github_1 = __webpack_require__(146);
+const slack_1 = __webpack_require__(777);
+const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
+const SUCCESS = 'success';
+function retroactivelyMarkPRsWithGreenBuilds() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pullRequests = yield github_1.getPRsMissingCIChecks();
+        if (!pullRequests.length)
+            return;
+        const { state, sha } = yield github_1.getStatusOfMaster();
+        if (state !== SUCCESS) {
+            return slack_1.postMessage(FAILED_MASTER);
+        }
+        ;
+        const message = `Code from this PR has passed all checks.\n\n${sha}`;
+        const all = pullRequests.map((pullRequest) => __awaiter(this, void 0, void 0, function* () {
+            const { number } = pullRequest;
+            return Promise.all([
+                github_1.addCommentToIssue(number, message),
+                github_1.tagCIChecksOnPR(pullRequest.number),
+            ]);
+        }));
+        return Promise.all(all);
+    });
+}
+exports.retroactivelyMarkPRsWithGreenBuilds = retroactivelyMarkPRsWithGreenBuilds;
+
+
+/***/ }),
 /* 706 */
 /***/ (function(module) {
 
@@ -32457,7 +32982,44 @@ module.exports = function generate__limitLength(it, $keyword, $ruleType) {
 module.exports = {"$id":"creator.json#","$schema":"http://json-schema.org/draft-06/schema#","type":"object","required":["name","version"],"properties":{"name":{"type":"string"},"version":{"type":"string"},"comment":{"type":"string"}}};
 
 /***/ }),
-/* 777 */,
+/* 777 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const request = __webpack_require__(375);
+const core = __webpack_require__(470);
+const hook = core.getInput('slack_hook');
+function postMessage(text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!hook) {
+            core.debug(`skipping slack hook ${text}, hook not defined`);
+            return;
+        }
+        return request({
+            uri: hook,
+            method: 'POST',
+            body: {
+                text,
+            },
+            json: true,
+        });
+    });
+}
+exports.postMessage = postMessage;
+
+
+/***/ }),
 /* 778 */,
 /* 779 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -38905,219 +39467,161 @@ module.exports = {
 /* 895 */,
 /* 896 */,
 /* 897 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-
-var utils = __webpack_require__(581);
-var formats = __webpack_require__(13);
-
-var arrayPrefixGenerators = {
-    brackets: function brackets(prefix) { // eslint-disable-line func-name-matching
-        return prefix + '[]';
-    },
-    indices: function indices(prefix, key) { // eslint-disable-line func-name-matching
-        return prefix + '[' + key + ']';
-    },
-    repeat: function repeat(prefix) { // eslint-disable-line func-name-matching
-        return prefix;
-    }
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-
-var toISO = Date.prototype.toISOString;
-
-var defaults = {
-    delimiter: '&',
-    encode: true,
-    encoder: utils.encode,
-    encodeValuesOnly: false,
-    serializeDate: function serializeDate(date) { // eslint-disable-line func-name-matching
-        return toISO.call(date);
-    },
-    skipNulls: false,
-    strictNullHandling: false
-};
-
-var stringify = function stringify( // eslint-disable-line func-name-matching
-    object,
-    prefix,
-    generateArrayPrefix,
-    strictNullHandling,
-    skipNulls,
-    encoder,
-    filter,
-    sort,
-    allowDots,
-    serializeDate,
-    formatter,
-    encodeValuesOnly
-) {
-    var obj = object;
-    if (typeof filter === 'function') {
-        obj = filter(prefix, obj);
-    } else if (obj instanceof Date) {
-        obj = serializeDate(obj);
-    } else if (obj === null) {
-        if (strictNullHandling) {
-            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder) : prefix;
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
+const slack_1 = __webpack_require__(777);
+const github_1 = __webpack_require__(146);
+var PayloadAction;
+(function (PayloadAction) {
+    PayloadAction["LABELED"] = "labeled";
+    PayloadAction["OPENED"] = "opened";
+})(PayloadAction || (PayloadAction = {}));
+/**
+ * Main entry point for all input/pr actions.
+ *
+ * Ensures that the labels are applied appropriately, side effects applied,
+ * and announcements made.
+ */
+function onIssueOrPR(octokit, context, input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { payload } = context;
+        switch (payload.action) {
+            case PayloadAction.LABELED:
+                yield onLabel(octokit, context, input);
+                break;
+            case PayloadAction.OPENED:
+                yield onOpen(octokit, context, input);
+                break;
+            default:
+                core.debug('skipping unknown issue action');
         }
-
-        obj = '';
-    }
-
-    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean' || utils.isBuffer(obj)) {
-        if (encoder) {
-            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder);
-            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder))];
+    });
+}
+exports.onIssueOrPR = onIssueOrPR;
+function onLabel(octokit, context, input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { actor, repo } = context;
+        const { label } = context.payload;
+        const issue = context.payload.issue || context.payload.pull_request;
+        const { number, html_url } = issue;
+        core.debug(`label event received for ${number} - ${html_url}`);
+        const alertLabelApplied = () => (slack_1.postMessage(`<${html_url}|#${number}> (${repo.repo}) _*${label.name}*_ by ${actor}`));
+        switch (label.name) {
+            case input.skipCILabel:
+                if (!context.payload.pull_request) {
+                    core.debug('skipping ci label for non pull request');
+                    return;
+                }
+                yield alertLabelApplied();
+                yield onSkipCILabel(octokit, context, label.name, input.requiredChecks);
+                break;
+            case input.skipApprovalLabel:
+                yield alertLabelApplied();
+                yield onEmergencyApprovalLabel(octokit, context, label.name);
+                break;
+            case input.posthocApprovalLabel:
+                yield alertLabelApplied();
+                yield onPosthocApprovalLabel(octokit, context, label.name);
+                break;
+            default:
+                core.debug('skipping unknown label');
         }
-        return [formatter(prefix) + '=' + formatter(String(obj))];
-    }
-
-    var values = [];
-
-    if (typeof obj === 'undefined') {
-        return values;
-    }
-
-    var objKeys;
-    if (Array.isArray(filter)) {
-        objKeys = filter;
-    } else {
-        var keys = Object.keys(obj);
-        objKeys = sort ? keys.sort(sort) : keys;
-    }
-
-    for (var i = 0; i < objKeys.length; ++i) {
-        var key = objKeys[i];
-
-        if (skipNulls && obj[key] === null) {
-            continue;
+    });
+}
+function onOpen(octokit, context, input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { pull_request } = context.payload;
+        if (!pull_request) {
+            core.debug('no action needed when opening an issue');
         }
-
-        if (Array.isArray(obj)) {
-            values = values.concat(stringify(
-                obj[key],
-                generateArrayPrefix(prefix, key),
-                generateArrayPrefix,
-                strictNullHandling,
-                skipNulls,
-                encoder,
-                filter,
-                sort,
-                allowDots,
-                serializeDate,
-                formatter,
-                encodeValuesOnly
-            ));
-        } else {
-            values = values.concat(stringify(
-                obj[key],
-                prefix + (allowDots ? '.' + key : '[' + key + ']'),
-                generateArrayPrefix,
-                strictNullHandling,
-                skipNulls,
-                encoder,
-                filter,
-                sort,
-                allowDots,
-                serializeDate,
-                formatter,
-                encodeValuesOnly
-            ));
+        const body = input.instructions;
+        yield comment(octokit, context.issue, body);
+    });
+}
+function onSkipCILabel(octokit, context, labelName, requiredChecks) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.debug(`bypassing checks - ${requiredChecks}`);
+        yield comment(octokit, context.issue, `Bypassing CI checks - ${labelName} applied`);
+        const { owner, repo } = context.issue;
+        const { pull_request } = context.payload;
+        const reqs = requiredChecks.map((check) => __awaiter(this, void 0, void 0, function* () {
+            return octokit.repos.createCommitStatus({
+                owner,
+                repo,
+                sha: pull_request.head.sha,
+                context: check,
+                state: 'success',
+            });
+        }));
+        return Promise.all(reqs);
+    });
+}
+function isSenderPeer(sender, author) {
+    return author.id !== sender.id;
+}
+function onEmergencyApprovalLabel(octokit, context, labelName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { issue, pull_request } = context.payload;
+        const { owner, repo, number } = context.issue;
+        if (pull_request) {
+            yield octokit.pulls.createReview({
+                owner,
+                repo,
+                pull_number: number,
+                body: `Skipping approval check - ${labelName} applied`,
+                event: 'APPROVE',
+            });
+            return;
         }
-    }
-
-    return values;
-};
-
-module.exports = function (object, opts) {
-    var obj = object;
-    var options = opts ? utils.assign({}, opts) : {};
-
-    if (options.encoder !== null && options.encoder !== undefined && typeof options.encoder !== 'function') {
-        throw new TypeError('Encoder has to be a function.');
-    }
-
-    var delimiter = typeof options.delimiter === 'undefined' ? defaults.delimiter : options.delimiter;
-    var strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults.strictNullHandling;
-    var skipNulls = typeof options.skipNulls === 'boolean' ? options.skipNulls : defaults.skipNulls;
-    var encode = typeof options.encode === 'boolean' ? options.encode : defaults.encode;
-    var encoder = typeof options.encoder === 'function' ? options.encoder : defaults.encoder;
-    var sort = typeof options.sort === 'function' ? options.sort : null;
-    var allowDots = typeof options.allowDots === 'undefined' ? false : options.allowDots;
-    var serializeDate = typeof options.serializeDate === 'function' ? options.serializeDate : defaults.serializeDate;
-    var encodeValuesOnly = typeof options.encodeValuesOnly === 'boolean' ? options.encodeValuesOnly : defaults.encodeValuesOnly;
-    if (typeof options.format === 'undefined') {
-        options.format = formats['default'];
-    } else if (!Object.prototype.hasOwnProperty.call(formats.formatters, options.format)) {
-        throw new TypeError('Unknown format option provided.');
-    }
-    var formatter = formats.formatters[options.format];
-    var objKeys;
-    var filter;
-
-    if (typeof options.filter === 'function') {
-        filter = options.filter;
-        obj = filter('', obj);
-    } else if (Array.isArray(options.filter)) {
-        filter = options.filter;
-        objKeys = filter;
-    }
-
-    var keys = [];
-
-    if (typeof obj !== 'object' || obj === null) {
-        return '';
-    }
-
-    var arrayFormat;
-    if (options.arrayFormat in arrayPrefixGenerators) {
-        arrayFormat = options.arrayFormat;
-    } else if ('indices' in options) {
-        arrayFormat = options.indices ? 'indices' : 'repeat';
-    } else {
-        arrayFormat = 'indices';
-    }
-
-    var generateArrayPrefix = arrayPrefixGenerators[arrayFormat];
-
-    if (!objKeys) {
-        objKeys = Object.keys(obj);
-    }
-
-    if (sort) {
-        objKeys.sort(sort);
-    }
-
-    for (var i = 0; i < objKeys.length; ++i) {
-        var key = objKeys[i];
-
-        if (skipNulls && obj[key] === null) {
-            continue;
+        // implicitly an issue
+        if (isSenderPeer(context.payload.sender, issue.user.id)) {
+            yield comment(octokit, context.issue, 'Issue is marked as approved!');
+            return;
         }
-
-        keys = keys.concat(stringify(
-            obj[key],
-            key,
-            generateArrayPrefix,
-            strictNullHandling,
-            skipNulls,
-            encode ? encoder : null,
-            filter,
-            sort,
-            allowDots,
-            serializeDate,
-            formatter,
-            encodeValuesOnly
-        ));
-    }
-
-    var joined = keys.join(delimiter);
-    var prefix = options.addQueryPrefix === true ? '?' : '';
-
-    return joined.length > 0 ? prefix + joined : '';
-};
+        yield comment(octokit, context.issue, 'An issue cannot be marked approved by the owner. Please have a peer apply the label.');
+    });
+}
+function onPosthocApprovalLabel(octokit, context, labelName) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        const { owner, repo, number } = context.issue;
+        const author = (((_a = context.payload.issue) === null || _a === void 0 ? void 0 : _a.user) || ((_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.user));
+        if (isSenderPeer(context.payload.sender, author)) {
+            yield comment(octokit, context.issue, `${labelName} successfully applied`);
+            return;
+        }
+        yield comment(octokit, context.issue, `${labelName} cannot be applied by the original author. Removing the label for now. Please get approval from a peer.`);
+        yield octokit.issues.removeLabel({
+            owner,
+            repo,
+            issue_number: number,
+            name: labelName,
+        });
+    });
+}
+function comment(octokit, issue, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.issues.createComment({
+            owner: issue.owner,
+            repo: issue.repo,
+            issue_number: issue.number,
+            body: github_1.formatComment(body),
+        });
+    });
+}
 
 
 /***/ }),
@@ -40858,527 +41362,38 @@ FormData.prototype.toString = function () {
 /* 933 */,
 /* 934 */,
 /* 935 */
-/***/ (function(__unusedmodule, __webpack_exports__, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
+var baseGetTag = __webpack_require__(51),
+    isArray = __webpack_require__(143),
+    isObjectLike = __webpack_require__(337);
 
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __webpack_require__(470);
-
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __webpack_require__(469);
-
-// EXTERNAL MODULE: ./node_modules/request-promise-native/lib/rp.js
-var rp = __webpack_require__(375);
-
-// CONCATENATED MODULE: ./src/slack.ts
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-const hook = Object(core.getInput)('slack_hook', {
-    required: true,
-});
-function postMessage(text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        rp({
-            uri: hook,
-            method: 'POST',
-            body: {
-                text,
-            },
-            json: true,
-        });
-    });
-}
-
-// CONCATENATED MODULE: ./src/context.ts
-// wrapper to make testing simpler
-
-function getContext() {
-    return github.context;
-}
-
-// CONCATENATED MODULE: ./src/input.ts
-// see action.yml for more details
-
-function getInput() {
-    return {
-        githubToken: Object(core.getInput)('github_token', {
-            required: true,
-        }),
-        instructions: Object(core.getInput)('instructions'),
-        requiredChecks: Object(core.getInput)('required_checks', {
-            required: true,
-        }).split(','),
-        skipApprovalLabel: Object(core.getInput)('skip_approval_label'),
-        skipCILabel: Object(core.getInput)('skip_ci_label'),
-        slackHook: Object(core.getInput)('slack_hook', {
-            required: true,
-        }),
-        posthocApprovalLabel: Object(core.getInput)('posthoc_approval_label'),
-        verifiedCILabel: Object(core.getInput)('verified_ci_label'),
-    };
-}
-
-// CONCATENATED MODULE: ./src/github.ts
-var github_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-const { githubToken, skipCILabel, verifiedCILabel, skipApprovalLabel, posthocApprovalLabel, } = getInput();
-const github_context = getContext();
-const { owner: github_owner, repo: github_repo } = github_context.repo;
-const CLOSED = 'closed';
-const MASTER = 'master';
-const SEARCH_PER_PAGE = 30;
-const client = Object(github.getOctokit)(githubToken);
-const REPO_SLUG = `${github_owner}/${github_repo}`;
-function getStatusOfMaster() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.repos.getCombinedStatusForRef({
-            owner: github_owner,
-            repo: github_repo,
-            ref: MASTER,
-        });
-        return data;
-    });
-}
-function tagCIChecksOnPR(number) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return labelIssue(number, verifiedCILabel);
-    });
-}
-function getIssuesMissingReview() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.search.issuesAndPullRequests({
-            q: [
-                `repo:${REPO_SLUG}`,
-                `label:${skipApprovalLabel}`,
-                `-label:${posthocApprovalLabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
-        });
-        return data.items;
-    });
-}
-function getClosedInPastWeek() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const date = new Date();
-        date.setDate(date.getDate() - 7);
-        const since = date.toISOString().substr(0, 10);
-        return getClosedIssues(since);
-    });
-}
-function getClosedIssues(since, previousIssues = [], page = 1) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data: { items, total_count } } = yield client.search.issuesAndPullRequests({
-            page,
-            q: [
-                `repo:${REPO_SLUG}`,
-                `state:${CLOSED}`,
-                `closed:>${since}`,
-            ].join('+'),
-        });
-        const issues = [...previousIssues, ...items];
-        return (total_count > page * SEARCH_PER_PAGE) ? getClosedIssues(since, issues, page + 1) : issues;
-    });
-}
-function getDetailedIssue(number) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.issues.get({
-            owner: github_owner,
-            repo: github_repo,
-            issue_number: number,
-        });
-        return data;
-    });
-}
-function getDetailedPR(number) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.pulls.get({
-            owner: github_owner,
-            repo: github_repo,
-            pull_number: number,
-        });
-        return data;
-    });
-}
-function getPRsMissingCIChecks() {
-    return github_awaiter(this, void 0, void 0, function* () {
-        const { data } = yield client.search.issuesAndPullRequests({
-            q: [
-                `repo:${REPO_SLUG}`,
-                `label:${skipCILabel}`,
-                `-label:${verifiedCILabel}`,
-                `state:${CLOSED}`,
-            ].join('+'),
-        });
-        return data.items.filter(i => i.pull_request);
-    });
-}
-function labelIssue(number, label) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return client.issues.addLabels({
-            owner: github_owner,
-            repo: github_repo,
-            issue_number: number,
-            labels: [
-                label,
-            ],
-        });
-    });
-}
-function addCommentToIssue(number, body) {
-    return github_awaiter(this, void 0, void 0, function* () {
-        return client.issues.createComment({
-            owner: github_owner,
-            repo: github_repo,
-            issue_number: number,
-            body: formatComment(body),
-        });
-    });
-}
-function formatComment(body) {
-    const now = new Date().toString();
-    return `${body}\n\n---\n${now}`;
-}
-
-// CONCATENATED MODULE: ./src/on_pull_request.ts
-var on_pull_request_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
+/** `Object#toString` result references. */
+var stringTag = '[object String]';
 
 /**
- * Main entry point for all pullRequest actions.
- * We've split these up for easier unit testing.
+ * Checks if `value` is classified as a `String` primitive or object.
  *
- * This action is responsible for removing PR checks that
- * otherwise lock the merge button in the case of an emergency.
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a string, else `false`.
+ * @example
  *
- * While removing these checks it does so through explicit labels
- * and will notify any specified slack rooms.
+ * _.isString('abc');
+ * // => true
+ *
+ * _.isString(1);
+ * // => false
  */
-function onPullRequest(octokit, context, input) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const { payload } = context;
-        if (payload.action === 'labeled') {
-            yield onLabel(octokit, context, input);
-            return;
-        }
-        if (payload.action === 'opened') {
-            yield onOpen(octokit, context, input);
-            return;
-        }
-    });
-}
-/**
- * onLabel sets up the PR with a basic checklist
- */
-function onOpen(octokit, context, input) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const body = input.instructions;
-        yield comment(octokit, context.issue, body);
-    });
-}
-function byPassChecks(octokit, issue, sha, checks) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const reqs = checks.map((context) => on_pull_request_awaiter(this, void 0, void 0, function* () {
-            Object(core.debug)(`bypassing check - ${context}`);
-            return octokit.repos.createCommitStatus({
-                owner: issue.owner,
-                repo: issue.repo,
-                sha: sha,
-                context,
-                state: 'success',
-            });
-        }));
-        yield Promise.all(reqs);
-    });
-}
-/**
- * onLabel event checks to see if the emergency-ci or emergency-approval
- * label has been applied. In the case that either have, the corresponding
- * check will be removed and recorded.
- */
-function onLabel(octokit, context, input) {
-    var _a, _b;
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        const { issue, pull_request, label } = context.payload;
-        const { owner, repo, number } = context.issue;
-        Object(core.debug)(`label event received: ${pp(context.issue)}`);
-        if (label.name === input.skipCILabel && pull_request) {
-            Object(core.debug)(`skip_ci_label applied`);
-            yield postMessage(`Bypassing CI checks for <${pull_request.html_url}|#${number}>`);
-            yield comment(octokit, context.issue, `Bypassing CI checks - ${label.name} applied`);
-            yield byPassChecks(octokit, context.issue, pull_request.head.sha, input.requiredChecks);
-        }
-        if (label.name === input.skipApprovalLabel && pull_request) {
-            Object(core.debug)(`skip_approval applied`);
-            yield postMessage(`Bypassing peer approval for <${pull_request.html_url}|#${number}>`);
-            yield octokit.pulls.createReview({
-                owner,
-                repo,
-                pull_number: number,
-                body: `Skipping approval check - ${label.name} applied`,
-                event: 'APPROVE',
-            });
-        }
-        if (label.name === input.posthocApprovalLabel) {
-            const author = (((_a = issue === null || issue === void 0 ? void 0 : issue.user) === null || _a === void 0 ? void 0 : _a.id) || ((_b = pull_request === null || pull_request === void 0 ? void 0 : pull_request.user) === null || _b === void 0 ? void 0 : _b.id));
-            if (context.payload.sender.id == author) {
-                yield octokit.issues.removeLabel({
-                    owner,
-                    repo,
-                    issue_number: number,
-                    name: input.posthocApprovalLabel,
-                });
-            }
-        }
-    });
-}
-function comment(octokit, issue, body) {
-    return on_pull_request_awaiter(this, void 0, void 0, function* () {
-        yield octokit.issues.createComment({
-            owner: issue.owner,
-            repo: issue.repo,
-            issue_number: issue.number,
-            body: formatComment(body),
-        });
-    });
-}
-function pp(obj) {
-    return JSON.stringify(obj, undefined, 2);
+function isString(value) {
+  return typeof value == 'string' ||
+    (!isArray(value) && isObjectLike(value) && baseGetTag(value) == stringTag);
 }
 
-// CONCATENATED MODULE: ./src/on_issue.ts
-var on_issue_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-const LABELED_ACTION = 'labeled';
-const NEWLINE = '\n';
-const RELEVANT_LABELS = Object(core.getInput)('relevant_labels').split(',');
-function onIssue(context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const payload = context.payload;
-        const { action, issue, label, } = payload;
-        if (action !== LABELED_ACTION) {
-            // even when creating an issue with a label, the label event happens after the create event
-            Object(core.debug)('irrelevant issue event, skipping');
-            return;
-        }
-        const relevantLabels = getRelevantLabels(issue);
-        if (!relevantLabels.length) {
-            Object(core.debug)('irrelevant issue label, skipping');
-            return;
-        }
-        // relevant label was already on issue, a different one was added
-        if (relevantLabels.indexOf(label.name) < 0) {
-            yield on_issue_onLabel(context);
-            // label event is the application of relevant label
-        }
-        else {
-            yield onEnterWorkflow(label.name, context);
-        }
-    });
-}
-function getRelevantLabels(issue) {
-    return issue.labels.reduce((accumulator, label) => {
-        const { name } = label;
-        if (RELEVANT_LABELS.indexOf(name) < 0)
-            return accumulator;
-        return [...accumulator, name];
-    }, []);
-}
-function onEnterWorkflow(labelName, context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const { actor, payload, } = context;
-        const { issue, repository, } = payload;
-        const { name, } = repository;
-        const { html_url, number, body, } = issue;
-        const quotedBody = body.split(NEWLINE).map(line => `> ${line}`).join(NEWLINE);
-        yield record(`<${html_url}|#${number}> (${name}) _*${labelName}*_ requested by ${actor}\n\n${quotedBody}`);
-    });
-}
-function on_issue_onLabel(context) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        const { actor, payload, } = context;
-        const { issue, label, repository, } = payload;
-        const { name, } = repository;
-        const { html_url, number, } = issue;
-        yield record(`<${html_url}|#${number}> (${name}) _*${label.name}*_ by ${actor}`);
-    });
-}
-function record(message) {
-    return on_issue_awaiter(this, void 0, void 0, function* () {
-        yield postMessage(message);
-    });
-}
-
-// CONCATENATED MODULE: ./src/retroactively_mark_prs_with_green_builds.ts
-// when a pr has bypassed ci checks, this goes back to mark that master become green at some point after,
-// i.e. that a broken app isn't sitting in production
-var retroactively_mark_prs_with_green_builds_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-const FAILED_MASTER = 'Cannot verify PRs that bypassed CI checks as master has failing checks';
-const SUCCESS = 'success';
-function retroactivelyMarkPRsWithGreenBuilds() {
-    return retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
-        const pullRequests = yield getPRsMissingCIChecks();
-        if (!pullRequests.length)
-            return;
-        const { state, sha } = yield getStatusOfMaster();
-        if (state !== SUCCESS) {
-            yield postMessage(FAILED_MASTER);
-            return;
-        }
-        ;
-        const message = `Code from this PR has passed all checks.\n\n${sha}`;
-        yield pullRequests.forEach((pullRequest) => retroactively_mark_prs_with_green_builds_awaiter(this, void 0, void 0, function* () {
-            const { number } = pullRequest;
-            yield addCommentToIssue(number, message);
-            yield tagCIChecksOnPR(pullRequest.number);
-        }));
-    });
-}
-
-// CONCATENATED MODULE: ./src/check_for_review.ts
-var check_for_review_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-const { posthocApprovalLabel: check_for_review_posthocApprovalLabel, } = getInput();
-function checkForReview() {
-    return check_for_review_awaiter(this, void 0, void 0, function* () {
-        const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${check_for_review_posthocApprovalLabel} to approve.`;
-        const issues = yield getIssuesMissingReview();
-        return Promise.all(issues.map((issue) => check_for_review_awaiter(this, void 0, void 0, function* () {
-            if (issue.pull_request) {
-                const detail = yield getDetailedPR(issue.number);
-                if (!detail.merged) {
-                    return;
-                }
-            }
-            yield addCommentToIssue(issue.number, msg);
-            yield postMessage(`${msg} - ${issue.html_url}`);
-        })));
-    });
-}
-
-// CONCATENATED MODULE: ./src/run.ts
-var run_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-
-
-
-
-
-const PULL_REQUEST_EVENT_NAME = 'pull_request';
-const ISSUE_EVENT_NAME = 'issues';
-const SCHEDULE = 'schedule';
-const UNSUPPORTED_EVENT = 'Workflow triggered by an unsupported event';
-function onCron(cronSchedule) {
-    return (callback) => {
-        const { payload } = getContext();
-        const { schedule } = payload;
-        if (cronSchedule === schedule)
-            callback();
-    };
-}
-const onDaily = onCron('* 14 * * *');
-// Entry point for any GitHub Actions
-function run() {
-    return run_awaiter(this, void 0, void 0, function* () {
-        try {
-            const octokit = Object(github.getOctokit)(Object(core.getInput)('github_token', {
-                required: true,
-            }));
-            const input = getInput();
-            const context = getContext();
-            switch (context.eventName) {
-                case SCHEDULE:
-                    onDaily(retroactivelyMarkPRsWithGreenBuilds);
-                    onDaily(checkForReview);
-                    break;
-                case PULL_REQUEST_EVENT_NAME:
-                    onPullRequest(octokit, context, input);
-                    break;
-                case ISSUE_EVENT_NAME:
-                    onIssue(context);
-                    break;
-                default:
-                    Object(core.setFailed)(UNSUPPORTED_EVENT);
-            }
-        }
-        catch (error) {
-            Object(core.setFailed)(error.message);
-            Object(core.debug)(error.stack);
-        }
-    });
-}
-
-// CONCATENATED MODULE: ./src/index.ts
-
-run();
+module.exports = isString;
 
 
 /***/ }),
@@ -44281,7 +44296,7 @@ module.exports = {"$id":"cache.json#","$schema":"http://json-schema.org/draft-06
 var errors = __webpack_require__(916),
     isFunction = __webpack_require__(10),
     isObjectLike = __webpack_require__(337),
-    isString = __webpack_require__(444),
+    isString = __webpack_require__(935),
     isUndefined = __webpack_require__(679);
 
 
@@ -44790,59 +44805,6 @@ module.exports = Writer;
 /******/ 				get: function() { return module.i; }
 /******/ 			});
 /******/ 			return module;
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	!function() {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = function(exports) {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getter */
-/******/ 	!function() {
-/******/ 		// define getter function for harmony exports
-/******/ 		var hasOwnProperty = Object.prototype.hasOwnProperty;
-/******/ 		__webpack_require__.d = function(exports, name, getter) {
-/******/ 			if(!hasOwnProperty.call(exports, name)) {
-/******/ 				Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 			}
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/create fake namespace object */
-/******/ 	!function() {
-/******/ 		// create a fake namespace object
-/******/ 		// mode & 1: value is a module id, require it
-/******/ 		// mode & 2: merge all properties of value into the ns
-/******/ 		// mode & 4: return value when already ns object
-/******/ 		// mode & 8|1: behave like require
-/******/ 		__webpack_require__.t = function(value, mode) {
-/******/ 			if(mode & 1) value = this(value);
-/******/ 			if(mode & 8) return value;
-/******/ 			if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 			var ns = Object.create(null);
-/******/ 			__webpack_require__.r(ns);
-/******/ 			Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 			if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 			return ns;
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	!function() {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = function(module) {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				function getDefault() { return module['default']; } :
-/******/ 				function getModuleExports() { return module; };
-/******/ 			__webpack_require__.d(getter, 'a', getter);
-/******/ 			return getter;
 /******/ 		};
 /******/ 	}();
 /******/ 	

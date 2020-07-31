@@ -1,6 +1,5 @@
 jest.mock('./../src/input');
 jest.mock('./../src/context');
-jest.mock('./../src/on_issue');
 jest.mock('./../src/on_pull_request');
 jest.mock('./../src/retroactively_mark_prs_with_green_builds');
 jest.mock('./../src/check_for_review');
@@ -19,13 +18,14 @@ jest.mock('@actions/core', () => {
   };
 });
 
+import * as core from '@actions/core'
+import * as github from '@actions/github';
+
 import { getContext } from '../src/context';
 import { mocked } from 'ts-jest/utils';
 import { run } from './../src/run';
-import { onIssue } from './../src/on_issue';
-import { onPullRequest } from './../src/on_pull_request';
-import * as core from '@actions/core'
-import * as github from '@actions/github';
+import { onIssueOrPR } from './../src/on_pull_request';
+import { checkForReview } from './../src/check_for_review';
 
 import {
   retroactivelyMarkPRsWithGreenBuilds,
@@ -36,17 +36,23 @@ function mockContext(context = {} as any) {
 }
 
 describe('::run', () => {
-  describe('pr event', () => {
-    beforeEach(() => {
+  describe('pr/issue event', () => {
+    it('runs on issues', () => {
       mockContext({
         eventName: 'pull_request',
       });
+
+      run();
+      expect(onIssueOrPR).toHaveBeenCalled();
     });
 
-    it('only runs onPullRequest', () => {
+    it('runs on prs', () => {
+      mockContext({
+        eventName: 'issues',
+      });
+
       run();
-      expect(onPullRequest).toHaveBeenCalled();
-      expect(onIssue).not.toHaveBeenCalled();
+      expect(onIssueOrPR).toHaveBeenCalled();
     });
   });
 
@@ -61,44 +67,15 @@ describe('::run', () => {
         });
       });
 
-      it('runs retroactive ci checks', () => {
+      it('runs crons', () => {
         run();
         expect(retroactivelyMarkPRsWithGreenBuilds).toHaveBeenCalled();
+        expect(checkForReview).toHaveBeenCalled();
       })
     });
-
-    describe('other crons', () => {
-      beforeEach(() => {
-        mockContext({
-          eventName: 'schedule',
-          payload: {
-            schedule: '0 * * * *',
-          }
-        });
-      });
-
-      it('does not run', () => {
-        run();
-        expect(retroactivelyMarkPRsWithGreenBuilds).not.toHaveBeenCalled();
-      });
-    });
   });
 
-  describe('issue event', () => {
-    beforeEach(() => {
-      mockContext({
-        eventName: 'issues',
-      });
-    });
-
-    it('runs onIssue', () => {
-      run();
-      expect(onIssue).toHaveBeenCalled();
-      expect(onPullRequest).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('unsuppored event', () => {
+  describe('unsupported event', () => {
     beforeEach(() => {
       mockContext({
         eventName: 'non_supported_event',
@@ -121,7 +98,7 @@ describe('::run', () => {
     it('fails the workflow', () => {
       const message = 'oh no!';
       const error = new Error(message);
-      mocked(onIssue).mockImplementation(() => {
+      mocked(onIssueOrPR).mockImplementation(() => {
         throw error;
       });
       run();
