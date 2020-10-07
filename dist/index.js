@@ -39595,15 +39595,25 @@ function onEmergencyApprovalLabel(octokit, context, labelName) {
     });
 }
 function onPosthocApprovalLabel(octokit, context, labelName) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         const { owner, repo, number } = context.issue;
         const author = (((_a = context.payload.issue) === null || _a === void 0 ? void 0 : _a.user) || ((_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.user));
-        if (isSenderPeer(context.payload.sender, author)) {
+        const isClosed = (((_c = context.payload.issue) === null || _c === void 0 ? void 0 : _c.state) || ((_d = context.payload.pull_request) === null || _d === void 0 ? void 0 : _d.state));
+        const isPeer = isSenderPeer(context.payload.sender, author);
+        if (isClosed && isPeer) {
             yield comment(octokit, context.issue, `${labelName} successfully applied`);
             return;
         }
-        yield comment(octokit, context.issue, `${labelName} cannot be applied by the original author. Removing the label for now. Please get approval from a peer.`);
+        const errors = [];
+        if (!isPeer) {
+            errors.push(`${labelName} cannot be applied by the original author. Please get approval from a peer.`);
+        }
+        if (!isClosed) {
+            errors.push(`${labelName} cannot be applied by to an open issue. Please wait until the issue is resolved.`);
+        }
+        errors.push('Removing the label for now');
+        yield comment(octokit, context.issue, errors.join('\n'));
         yield octokit.issues.removeLabel({
             owner,
             repo,

@@ -116,6 +116,8 @@ describe('pull request actions', () => {
       );
 
       expect(deleted).toBeTruthy();
+      expect(commentBody).toMatch(/original author/);
+      expect(commentBody).toMatch(/open issue/);
       expect(commentBody).toMatch(/Removing the label/);
     });
 
