@@ -159,7 +159,10 @@ async function onPosthocApprovalLabel(octokit: GitHubClient, context: Context, l
   const { owner, repo, number } = context.issue;
 
   const author = (context.payload.issue?.user || context.payload.pull_request?.user);
-  if (isSenderPeer(context.payload.sender, author)) {
+  const isClosed = (context.payload.issue?.state || context.payload.pull_request?.state);
+  const isPeer = isSenderPeer(context.payload.sender, author);
+
+  if (isClosed && isPeer) {
     await comment(
       octokit,
       context.issue,
@@ -169,10 +172,21 @@ async function onPosthocApprovalLabel(octokit: GitHubClient, context: Context, l
     return;
   }
 
+  const errors = [];
+  if (!isPeer) {
+    errors.push(`${labelName} cannot be applied by the original author. Please get approval from a peer.`);
+  }
+
+  if (!isClosed) {
+    errors.push(`${labelName} cannot be applied by to an open issue. Please wait until the issue is resolved.`);
+  }
+
+  errors.push('Removing the label for now');
+
   await comment(
     octokit,
     context.issue,
-    `${labelName} cannot be applied by the original author. Removing the label for now. Please get approval from a peer.`
+    errors.join('\n'),
   );
 
   await octokit.issues.removeLabel({
