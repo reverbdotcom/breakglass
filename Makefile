@@ -15,7 +15,7 @@ dist/index.js: ${SRC} ## build project
 	ncc build src/index.ts
 
 # this explicit intermediate rule is unnecessary for building dist/index.js, but is useful when developing so you can import specific source files, see also run-development
-lib/index.js: ${SRC} 
+lib/index.js: ${SRC}
 	tsc --project ./tsconfig.json
 
 .PHONY: setup
@@ -33,7 +33,7 @@ lint: ## check for formatting errors
 
 .PHONY: test
 test: ## verify functionality
-	jest
+	GITHUB_TOKEN='foozles' jest
 
 .PHONY: test-watch
 test-watch: ## start test watcher
