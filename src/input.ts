@@ -10,6 +10,7 @@ export interface Input {
   posthocApprovalLabel?: string;
   slackHook: string;
   verifiedCILabel: string;
+  defaultBranch: string;
 }
 
 export function getInput(): Input {
@@ -22,5 +23,6 @@ export function getInput(): Input {
     slackHook: core.getInput('slack_hook'),
     posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
     verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
+    defaultBranch: core.getInput('default_branch') || 'master',
   };
 }
