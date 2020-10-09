@@ -39,6 +39,7 @@ const input = {
     'ci/circleci: js',
   ],
   verifiedCILabel: 'the-verified-ci-label',
+  defaultBranch: 'master',
 };
 
 describe('pull request actions', () => {
