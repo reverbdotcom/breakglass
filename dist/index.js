@@ -10405,7 +10405,7 @@ function getInput() {
         slackHook: core.getInput('slack_hook'),
         posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
         verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
-        defaultBranch: core.getInput('default_branch') || 'master',
+        branch: core.getInput('branch'),
     };
 }
 exports.getInput = getInput;
