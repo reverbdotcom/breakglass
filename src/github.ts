@@ -89,6 +89,7 @@ export async function getDetailedPR(number) {
     repo,
     pull_number: number,
   });
+
   return data;
 }
 
@@ -120,7 +121,6 @@ export async function labelIssue(number: number, label: string) {
     ],
   });
 }
-
 
 export async function addCommentToIssue(number: number, body: string) {
   return client.issues.createComment({

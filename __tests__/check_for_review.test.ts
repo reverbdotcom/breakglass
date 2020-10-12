@@ -1,3 +1,5 @@
+jest.mock('../src/context');
+
 import { mocked } from 'ts-jest/utils';
 import { checkForReview } from '../src/check_for_review';
 import {

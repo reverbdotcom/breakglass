@@ -6,6 +6,7 @@ import { getInput } from './input';
 import { getContext } from './context';
 import { retroactivelyMarkPRsWithGreenBuilds } from './retroactively_mark_prs_with_green_builds';
 import { checkForReview } from './check_for_review';
+import { checkForBranchProtection } from './check_for_branch_protection';
 
 const PULL_REQUEST_EVENT_NAME = 'pull_request';
 const ISSUE_EVENT_NAME = 'issues';
@@ -21,6 +22,7 @@ export async function run(): Promise<void> {
     switch (context.eventName) {
       case SCHEDULE:
         await Promise.all([
+          checkForBranchProtection(),
           checkForReview(),
           retroactivelyMarkPRsWithGreenBuilds(),
         ]);

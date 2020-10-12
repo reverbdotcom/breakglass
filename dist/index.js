@@ -5459,6 +5459,7 @@ const input_1 = __webpack_require__(265);
 const context_1 = __webpack_require__(204);
 const retroactively_mark_prs_with_green_builds_1 = __webpack_require__(705);
 const check_for_review_1 = __webpack_require__(29);
+const check_for_branch_protection_1 = __webpack_require__(630);
 const PULL_REQUEST_EVENT_NAME = 'pull_request';
 const ISSUE_EVENT_NAME = 'issues';
 const SCHEDULE = 'schedule';
@@ -5472,6 +5473,7 @@ function run() {
             switch (context.eventName) {
                 case SCHEDULE:
                     yield Promise.all([
+                        check_for_branch_protection_1.checkForBranchProtection(),
                         check_for_review_1.checkForReview(),
                         retroactively_mark_prs_with_green_builds_1.retroactivelyMarkPRsWithGreenBuilds(),
                     ]);
@@ -10403,6 +10405,7 @@ function getInput() {
         slackHook: core.getInput('slack_hook'),
         posthocApprovalLabel: core.getInput('posthoc_approval_label') || 'posthoc-approval',
         verifiedCILabel: core.getInput('verified_ci_label') || 'verified-ci',
+        branch: core.getInput('branch'),
     };
 }
 exports.getInput = getInput;
@@ -26023,7 +26026,68 @@ exports.Querystring = Querystring
 
 
 /***/ }),
-/* 630 */,
+/* 630 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const github_1 = __webpack_require__(146);
+const context_1 = __webpack_require__(204);
+function checkForBranchProtection() {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const context = context_1.getContext();
+        const { owner, repo } = context.repo;
+        const resp = yield github_1.client.repos.getBranchProtection({
+            owner,
+            repo,
+            branch: 'master',
+        });
+        const { data } = resp;
+        const errors = [];
+        if (data.required_status_checks.contexts.length === 0) {
+            errors.push('❌ - required status checks are not enforced');
+        }
+        if (!data.enforce_admins.enabled) {
+            errors.push('❌ - not enabled for admins');
+        }
+        if (!data.required_pull_request_reviews) {
+            errors.push('❌ - pull request reviews are not enforced');
+        }
+        if (!((_a = data.required_pull_request_reviews) === null || _a === void 0 ? void 0 : _a.dismiss_stale_reviews)) {
+            errors.push('❌ - "dismiss stale reviews" is not enabled');
+        }
+        if (errors.length > 0) {
+            yield github_1.client.issues.create({
+                owner,
+                repo,
+                title: 'Branch Protection Missing or Incomplete',
+                body: `
+## Branch Protection Missing or Incomplete
+
+The following errors were found when checking the branch protection settings for this repository.
+
+${errors.join('\n')}
+
+Please notify the repository admin and resolve immediately.`,
+            });
+        }
+    });
+}
+exports.checkForBranchProtection = checkForBranchProtection;
+
+
+/***/ }),
 /* 631 */
 /***/ (function(module) {
 

@@ -1,6 +1,7 @@
 jest.mock('../src/input');
 jest.mock('../src/github');
 jest.mock('../src/slack');
+jest.mock('../src/context');
 
 import { mocked } from 'ts-jest/utils';
 
