@@ -6,20 +6,18 @@ import { checkForBranchProtection } from '../src/check_for_branch_protection';
 import { client } from '../src/github';
 
 const VALID_BRANCH_SETTINGS = {
-  enforce_admins: {
-    enabled: true
+  protected: true,
+  protection: {
+    required_status_checks: {
+      enforcement_level: 'everyone',
+      contexts: [{ name: 'ci-foozles' }],
+    },
   },
-  required_pull_request_reviews: {
-    dismiss_stale_reviews: true,
-  },
-  required_status_checks: {
-    contexts: [{ name: 'ci-foozles' }],
-  }
 }
 
 describe('::checkForBranchProtection', () => {
   it('does not open an issue if the configuration is valid', async () => {
-    (client.repos.getBranchProtection as any).mockReturnValue(Promise.resolve({
+    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
       data: {
         ...VALID_BRANCH_SETTINGS,
       },
@@ -30,12 +28,32 @@ describe('::checkForBranchProtection', () => {
     expect(client.issues.create).not.toHaveBeenCalled();
   });
 
-  it('opens an issue if ci checks are not enabled', async () => {
-    (client.repos.getBranchProtection as any).mockReturnValue(Promise.resolve({
+  it('opens an issue if the branch is not protected', async () => {
+    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
       data: {
         ...VALID_BRANCH_SETTINGS,
-        required_status_checks: {
-          contexts: [],
+        protected: false,
+      },
+    }))
+
+    await checkForBranchProtection();
+
+    expect(client.issues.create).toHaveBeenCalledWith({
+      body: expect.stringContaining('not enabled'),
+      owner: 'the-org',
+      repo: 'the-repo',
+      title: 'Branch Protection Missing or Incomplete',
+    });
+  });
+
+  it('opens an issue if ci checks are not enabled', async () => {
+    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
+      data: {
+        ...VALID_BRANCH_SETTINGS,
+        protection: {
+          required_status_checks: {
+            contexts: [],
+          }
         }
       },
     }))
@@ -51,11 +69,13 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('opens an issue if rules are not applied to admins', async () => {
-    (client.repos.getBranchProtection as any).mockReturnValue(Promise.resolve({
+    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
       data: {
         ...VALID_BRANCH_SETTINGS,
-        enforce_admins: {
-          enabled: false
+        protection: {
+          required_status_checks: {
+            enforcement_level: 'nobody',
+          },
         },
       },
     }))
@@ -64,44 +84,6 @@ describe('::checkForBranchProtection', () => {
 
     expect(client.issues.create).toHaveBeenCalledWith({
       body: expect.stringContaining('not enabled for admins'),
-      owner: 'the-org',
-      repo: 'the-repo',
-      title: 'Branch Protection Missing or Incomplete',
-    });
-  });
-
-  it('opens an issue if reviews are not required', async () => {
-    (client.repos.getBranchProtection as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        required_pull_request_reviews: null,
-      },
-    }))
-
-    await checkForBranchProtection();
-
-    expect(client.issues.create).toHaveBeenCalledWith({
-      body: expect.stringContaining('pull request reviews'),
-      owner: 'the-org',
-      repo: 'the-repo',
-      title: 'Branch Protection Missing or Incomplete',
-    });
-  });
-
-  it('opens an issue if changes do not dismiss a review', async () => {
-    (client.repos.getBranchProtection as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        required_pull_request_reviews: {
-          dismiss_stale_reviews: false,
-        },
-      },
-    }))
-
-    await checkForBranchProtection();
-
-    expect(client.issues.create).toHaveBeenCalledWith({
-      body: expect.stringContaining('dismiss stale reviews'),
       owner: 'the-org',
       repo: 'the-repo',
       title: 'Branch Protection Missing or Incomplete',
