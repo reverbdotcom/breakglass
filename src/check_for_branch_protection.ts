@@ -1,36 +1,44 @@
+import * as core from '@actions/core';
 import { client } from './github';
 import { getContext } from './context';
 
+async function fetchCurrentSettings(owner: string, repo: string) {
+  try {
+    return await client.repos.getBranch({
+      owner,
+      repo,
+      branch: 'master',
+    });
+  } catch (e) {
+    core.debug(`could not check for branch protection: ${e}`);
+    throw e;
+  }
+}
+
 export async function checkForBranchProtection() {
+  core.debug('checking for branch protection');
+
   const context = getContext();
   const { owner, repo } = context.repo;
-
-  const resp = await client.repos.getBranchProtection({
-    owner,
-    repo,
-    branch: 'master',
-  });
+  const resp = await fetchCurrentSettings(owner, repo);
 
   const { data } = resp;
 
   const errors = [];
-  if (data.required_status_checks.contexts.length === 0) {
+  if (!data.protected) {
+    errors.push('❌ - branch protection is not enabled');
+  }
+
+  if (!data?.protection?.required_status_checks?.contexts?.length) {
     errors.push('❌ - required status checks are not enforced');
   }
 
-  if (!data.enforce_admins.enabled) {
+  if (data?.protection?.required_status_checks?.enforcement_level !== 'everyone') {
     errors.push('❌ - not enabled for admins');
   }
 
-  if (!data.required_pull_request_reviews) {
-    errors.push('❌ - pull request reviews are not enforced');
-  }
-
-  if (!data.required_pull_request_reviews?.dismiss_stale_reviews) {
-    errors.push('❌ - "dismiss stale reviews" is not enabled');
-  }
-
   if (errors.length > 0) {
+    core.debug('branch protection is missing or incomplete');
     await client.issues.create({
       owner,
       repo,

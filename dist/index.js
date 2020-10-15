@@ -26041,33 +26041,44 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const core = __webpack_require__(470);
 const github_1 = __webpack_require__(146);
 const context_1 = __webpack_require__(204);
-function checkForBranchProtection() {
-    var _a;
+function fetchCurrentSettings(owner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
+        try {
+            return yield github_1.client.repos.getBranch({
+                owner,
+                repo,
+                branch: 'master',
+            });
+        }
+        catch (e) {
+            core.debug(`could not check for branch protection: ${e}`);
+            throw e;
+        }
+    });
+}
+function checkForBranchProtection() {
+    var _a, _b, _c, _d, _e;
+    return __awaiter(this, void 0, void 0, function* () {
+        core.debug('checking for branch protection');
         const context = context_1.getContext();
         const { owner, repo } = context.repo;
-        const resp = yield github_1.client.repos.getBranchProtection({
-            owner,
-            repo,
-            branch: 'master',
-        });
+        const resp = yield fetchCurrentSettings(owner, repo);
         const { data } = resp;
         const errors = [];
-        if (data.required_status_checks.contexts.length === 0) {
+        if (!data.protected) {
+            errors.push('❌ - branch protection is not enabled');
+        }
+        if (!((_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks) === null || _b === void 0 ? void 0 : _b.contexts) === null || _c === void 0 ? void 0 : _c.length)) {
             errors.push('❌ - required status checks are not enforced');
         }
-        if (!data.enforce_admins.enabled) {
+        if (((_e = (_d = data === null || data === void 0 ? void 0 : data.protection) === null || _d === void 0 ? void 0 : _d.required_status_checks) === null || _e === void 0 ? void 0 : _e.enforcement_level) !== 'everyone') {
             errors.push('❌ - not enabled for admins');
         }
-        if (!data.required_pull_request_reviews) {
-            errors.push('❌ - pull request reviews are not enforced');
-        }
-        if (!((_a = data.required_pull_request_reviews) === null || _a === void 0 ? void 0 : _a.dismiss_stale_reviews)) {
-            errors.push('❌ - "dismiss stale reviews" is not enabled');
-        }
         if (errors.length > 0) {
+            core.debug('branch protection is missing or incomplete');
             yield github_1.client.issues.create({
                 owner,
                 repo,
