@@ -1,9 +1,22 @@
 jest.mock('../src/context');
 jest.mock('../src/github');
 
+const input = {
+  requiredChecks: 'lint, ci',
+};
+
+jest.mock('../src/input', () => {
+  return {
+    getInput: () => {
+      return input;
+    }
+  }
+});
+
 import { mocked } from 'ts-jest/utils';
 import { checkForBranchProtection } from '../src/check_for_branch_protection';
 import { client } from '../src/github';
+import { getInput } from '../src/input';
 
 const VALID_BRANCH_SETTINGS = {
   protected: true,
@@ -66,6 +79,26 @@ describe('::checkForBranchProtection', () => {
       repo: 'the-repo',
       title: 'Branch Protection Missing or Incomplete',
     });
+  });
+
+  it('does not open an issue if ci checks are not required per the input', async () => {
+    input.requiredChecks = '';
+
+    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
+      data: {
+        ...VALID_BRANCH_SETTINGS,
+        protection: {
+          required_status_checks: {
+            enforcement_level: 'everyone',
+            contexts: [],
+          }
+        }
+      },
+    }))
+
+    await checkForBranchProtection();
+
+    expect(client.issues.create).not.toHaveBeenCalled();
   });
 
   it('opens an issue if rules are not applied to admins', async () => {
