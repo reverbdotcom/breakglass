@@ -26044,6 +26044,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const github_1 = __webpack_require__(146);
 const context_1 = __webpack_require__(204);
+const input_1 = __webpack_require__(265);
 function fetchCurrentSettings(owner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -26060,7 +26061,7 @@ function fetchCurrentSettings(owner, repo) {
     });
 }
 function checkForBranchProtection() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         core.debug('checking for branch protection');
         const context = context_1.getContext();
@@ -26071,10 +26072,12 @@ function checkForBranchProtection() {
         if (!data.protected) {
             errors.push('❌ - branch protection is not enabled');
         }
-        if (!((_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks) === null || _b === void 0 ? void 0 : _b.contexts) === null || _c === void 0 ? void 0 : _c.length)) {
+        const checks = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks;
+        const input = input_1.getInput();
+        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks.length) {
             errors.push('❌ - required status checks are not enforced');
         }
-        if (((_e = (_d = data === null || data === void 0 ? void 0 : data.protection) === null || _d === void 0 ? void 0 : _d.required_status_checks) === null || _e === void 0 ? void 0 : _e.enforcement_level) !== 'everyone') {
+        if ((checks === null || checks === void 0 ? void 0 : checks.enforcement_level) !== 'everyone') {
             errors.push('❌ - not enabled for admins');
         }
         if (errors.length > 0) {

@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { client } from './github';
 import { getContext } from './context';
+import { getInput } from './input';
 
 async function fetchCurrentSettings(owner: string, repo: string) {
   try {
@@ -29,11 +30,14 @@ export async function checkForBranchProtection() {
     errors.push('❌ - branch protection is not enabled');
   }
 
-  if (!data?.protection?.required_status_checks?.contexts?.length) {
+  const checks = data?.protection?.required_status_checks;
+  const input = getInput();
+
+  if (!checks?.contexts?.length && input.requiredChecks.length) {
     errors.push('❌ - required status checks are not enforced');
   }
 
-  if (data?.protection?.required_status_checks?.enforcement_level !== 'everyone') {
+  if (checks?.enforcement_level !== 'everyone') {
     errors.push('❌ - not enabled for admins');
   }
 
