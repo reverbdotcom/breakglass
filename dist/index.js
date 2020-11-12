@@ -26077,7 +26077,7 @@ function checkForBranchProtection() {
         }
         const checks = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks;
         const input = input_1.getInput();
-        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks.length) {
+        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks) {
             errors.push('❌ - required status checks are not enforced');
         }
         if ((checks === null || checks === void 0 ? void 0 : checks.enforcement_level) !== 'everyone') {
