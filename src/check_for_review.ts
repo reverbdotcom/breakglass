@@ -14,7 +14,7 @@ const {
 
 const MISSING_MESSAGE = `
 This issue is missing verification by a peer!
-Have a peer apply the ${posthocApprovalLabel} label once they've reviewed your emergency change.
+When an issue is marked with emergency-approval as this issue did, a peer needs to review these changes afterwards and add the ${posthocApprovalLabel} label to document that this code or change was eventually reviewed.
 `;
 
 export async function checkForReview() {
