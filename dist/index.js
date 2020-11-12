@@ -424,9 +424,12 @@ const input_1 = __webpack_require__(265);
 const slack_1 = __webpack_require__(777);
 const core = __webpack_require__(470);
 const { posthocApprovalLabel, } = input_1.getInput();
+const MISSING_MESSAGE = `
+This issue is missing verification by a peer!
+Have a peer apply the ${posthocApprovalLabel} label once they've reviewed your emergency change.
+`;
 function checkForReview() {
     return __awaiter(this, void 0, void 0, function* () {
-        const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${posthocApprovalLabel} to approve.`;
         const issues = yield github_1.getIssuesMissingReview();
         core.debug(`found ${issues.length}`);
         return Promise.all(issues.map((issue) => __awaiter(this, void 0, void 0, function* () {
@@ -437,9 +440,9 @@ function checkForReview() {
                     return;
                 }
             }
-            core.debug(`marking issue as needs review: ${issue.html_url} ${msg}`);
-            yield github_1.addCommentToIssue(issue.number, msg);
-            return slack_1.postMessage(`${msg} - ${issue.html_url}`);
+            core.debug(`marking issue as needs review: ${issue.html_url} ${MISSING_MESSAGE}`);
+            yield github_1.addCommentToIssue(issue.number, MISSING_MESSAGE);
+            return slack_1.postMessage(`${MISSING_MESSAGE} - ${issue.html_url}`);
         })));
     });
 }

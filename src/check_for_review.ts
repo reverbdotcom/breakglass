@@ -12,12 +12,15 @@ const {
   posthocApprovalLabel,
 } = getInput();
 
+const MISSING_MESSAGE = `
+This issue is missing verification by a peer!
+Have a peer apply the ${posthocApprovalLabel} label once they've reviewed your emergency change.
+`;
+
 export async function checkForReview() {
-  const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${posthocApprovalLabel} to approve.`;
   const issues = await getIssuesMissingReview();
 
   core.debug(`found ${issues.length}`);
-
   return Promise.all(issues.map(async (issue) => {
     if (issue.pull_request) {
       const detail = await getDetailedPR(issue.number);
@@ -27,12 +30,12 @@ export async function checkForReview() {
       }
     }
 
-    core.debug(`marking issue as needs review: ${issue.html_url} ${msg}`);
+    core.debug(`marking issue as needs review: ${issue.html_url} ${MISSING_MESSAGE}`);
     await addCommentToIssue(
       issue.number,
-      msg,
+      MISSING_MESSAGE,
     );
 
-    return postMessage(`${msg} - ${issue.html_url}`);
+    return postMessage(`${MISSING_MESSAGE} - ${issue.html_url}`);
   }));
 }

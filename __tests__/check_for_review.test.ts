@@ -30,7 +30,7 @@ describe('::checkForReview', () => {
     } as any);
 
     await checkForReview();
-    expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/missing verification by a peer.*\/23/i));
+    expect(postMessage).toHaveBeenCalledWith(expect.stringMatching(/missing verification by a peer/i));
     expect(addCommentToIssue).toHaveBeenCalledWith(
       544,
       expect.stringMatching(/missing verification by a peer/i),
