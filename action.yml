@@ -23,13 +23,13 @@ inputs:
   posthoc_approval_label:
     description: The label denoting approval after merge
     required: false
-    default: verified-peer
+    default: posthoc-approval
   github_token:
     description: Token injected via secrets
     required: true
   required_checks:
-    description: All required check names
-    required: true
+    description: All required ci checks in a comma deliminated string
+    required: false
   instructions:
     description: Instructions to add to each pull request
     required: false

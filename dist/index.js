@@ -424,9 +424,12 @@ const input_1 = __webpack_require__(265);
 const slack_1 = __webpack_require__(777);
 const core = __webpack_require__(470);
 const { posthocApprovalLabel, } = input_1.getInput();
+const MISSING_MESSAGE = `
+This issue is missing verification by a peer!
+When an issue is marked with emergency-approval as this issue did, a peer needs to review these changes afterwards and add the ${posthocApprovalLabel} label to document that this code or change was eventually reviewed.
+`;
 function checkForReview() {
     return __awaiter(this, void 0, void 0, function* () {
-        const msg = `This issue is missing verification by a peer! Have a peer review this issue and apply the ${posthocApprovalLabel} to approve.`;
         const issues = yield github_1.getIssuesMissingReview();
         core.debug(`found ${issues.length}`);
         return Promise.all(issues.map((issue) => __awaiter(this, void 0, void 0, function* () {
@@ -437,9 +440,9 @@ function checkForReview() {
                     return;
                 }
             }
-            core.debug(`marking issue as needs review: ${issue.html_url} ${msg}`);
-            yield github_1.addCommentToIssue(issue.number, msg);
-            return slack_1.postMessage(`${msg} - ${issue.html_url}`);
+            core.debug(`marking issue as needs review: ${issue.html_url} ${MISSING_MESSAGE}`);
+            yield github_1.addCommentToIssue(issue.number, MISSING_MESSAGE);
+            return slack_1.postMessage(`${MISSING_MESSAGE} - ${issue.html_url}`);
         })));
     });
 }
@@ -26074,7 +26077,7 @@ function checkForBranchProtection() {
         }
         const checks = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks;
         const input = input_1.getInput();
-        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks.length) {
+        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks) {
             errors.push('❌ - required status checks are not enforced');
         }
         if ((checks === null || checks === void 0 ? void 0 : checks.enforcement_level) !== 'everyone') {

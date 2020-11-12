@@ -82,7 +82,7 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('does not open an issue if ci checks are not required per the input', async () => {
-    input.requiredChecks = '';
+    input.requiredChecks = null;
 
     (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
       data: {
