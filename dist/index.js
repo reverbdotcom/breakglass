@@ -10398,11 +10398,12 @@ exports.Context = Context;
 Object.defineProperty(exports, "__esModule", { value: true });
 // see action.yml for more details
 const core = __webpack_require__(470);
+const parse_required_checks_1 = __webpack_require__(809);
 function getInput() {
     return {
         githubToken: core.getInput('github_token'),
         instructions: core.getInput('instructions'),
-        requiredChecks: core.getInput('required_checks').split(','),
+        requiredChecks: parse_required_checks_1.default(core.getInput('required_checks')),
         skipApprovalLabel: core.getInput('skip_approval_label') || 'emergency-approval',
         skipCILabel: core.getInput('skip_ci_label') || 'emergency-ci',
         slackHook: core.getInput('slack_hook'),
@@ -26077,7 +26078,7 @@ function checkForBranchProtection() {
         }
         const checks = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks;
         const input = input_1.getInput();
-        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks) {
+        if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks.length) {
             errors.push('❌ - required status checks are not enforced');
         }
         if ((checks === null || checks === void 0 ? void 0 : checks.enforcement_level) !== 'everyone') {
@@ -33925,7 +33926,19 @@ function vars(arr, statement) {
 /* 806 */,
 /* 807 */,
 /* 808 */,
-/* 809 */,
+/* 809 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function parseRequiredChecks(input) {
+    return input ? input.split(',') : [];
+}
+exports.default = parseRequiredChecks;
+
+
+/***/ }),
 /* 810 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 

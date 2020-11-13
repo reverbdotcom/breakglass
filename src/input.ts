@@ -1,5 +1,6 @@
 // see action.yml for more details
 import * as core from '@actions/core';
+import parseRequiredChecks from './parse_required_checks';
 
 export interface Input {
   githubToken: string;
@@ -17,7 +18,7 @@ export function getInput(): Input {
   return {
     githubToken: core.getInput('github_token'),
     instructions: core.getInput('instructions'),
-    requiredChecks: core.getInput('required_checks').split(','),
+    requiredChecks: parseRequiredChecks(core.getInput('required_checks')),
     skipApprovalLabel: core.getInput('skip_approval_label') || 'emergency-approval',
     skipCILabel: core.getInput('skip_ci_label') || 'emergency-ci',
     slackHook: core.getInput('slack_hook'),

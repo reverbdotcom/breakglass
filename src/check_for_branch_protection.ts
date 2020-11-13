@@ -33,7 +33,7 @@ export async function checkForBranchProtection() {
   const checks = data?.protection?.required_status_checks;
   const input = getInput();
 
-  if (!checks?.contexts?.length && input.requiredChecks) {
+  if (!checks?.contexts?.length && input.requiredChecks.length) {
     errors.push('❌ - required status checks are not enforced');
   }
 
