@@ -37,7 +37,7 @@ test: ## verify functionality
 
 .PHONY: test-watch
 test-watch: ## start test watcher
-	jest --watch --watchPathIgnorePatterns tmp
+	GITHUB_TOKEN='foozles' jest --watch --watchPathIgnorePatterns tmp
 
 ${ENV_FILE}:
 	cp ${EXAMPLE_ENV_FILE} ${ENV_FILE}

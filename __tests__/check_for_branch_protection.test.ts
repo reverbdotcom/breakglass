@@ -2,7 +2,7 @@ jest.mock('../src/context');
 jest.mock('../src/github');
 
 const input = {
-  requiredChecks: 'lint, ci',
+  requiredChecks: ['lint', 'ci'],
 };
 
 jest.mock('../src/input', () => {
@@ -82,7 +82,7 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('does not open an issue if ci checks are not required per the input', async () => {
-    input.requiredChecks = null;
+    input.requiredChecks = [];
 
     (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
       data: {
