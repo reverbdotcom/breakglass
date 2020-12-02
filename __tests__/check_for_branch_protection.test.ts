@@ -53,6 +53,7 @@ describe('::checkForBranchProtection', () => {
 
     expect(client.issues.create).toHaveBeenCalledWith({
       body: expect.stringContaining('not enabled'),
+      labels: ['branch-protection-alert'],
       owner: 'the-org',
       repo: 'the-repo',
       title: 'Branch Protection Missing or Incomplete',
@@ -74,6 +75,7 @@ describe('::checkForBranchProtection', () => {
     await checkForBranchProtection();
 
     expect(client.issues.create).toHaveBeenCalledWith({
+      labels: ['branch-protection-alert'],
       body: expect.stringContaining('required status checks are not enforced'),
       owner: 'the-org',
       repo: 'the-repo',
@@ -116,6 +118,7 @@ describe('::checkForBranchProtection', () => {
     await checkForBranchProtection();
 
     expect(client.issues.create).toHaveBeenCalledWith({
+      labels: ['branch-protection-alert'],
       body: expect.stringContaining('not enabled for admins'),
       owner: 'the-org',
       repo: 'the-repo',
