@@ -26089,6 +26089,7 @@ function checkForBranchProtection() {
             yield github_1.client.issues.create({
                 owner,
                 repo,
+                labels: ['branch-protection-alert'],
                 title: 'Branch Protection Missing or Incomplete',
                 body: `
 ## Branch Protection Missing or Incomplete
