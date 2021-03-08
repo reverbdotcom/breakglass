@@ -106,3 +106,5 @@ tmp/
 run-development.ts
 
 *.swp
+
+tags

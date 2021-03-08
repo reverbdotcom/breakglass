@@ -4860,6 +4860,23 @@ function formatComment(body) {
     return `${body}\n\n---\n${now}`;
 }
 exports.formatComment = formatComment;
+function fetchCurrentSettings(branch = 'master') {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const branchResponse = yield exports.client.repos.getBranch({
+                owner,
+                repo,
+                branch,
+            });
+            return branchResponse.data;
+        }
+        catch (e) {
+            core.debug(`could not check for branch protection: ${e}`);
+            throw e;
+        }
+    });
+}
+exports.fetchCurrentSettings = fetchCurrentSettings;
 
 
 /***/ }),
@@ -26049,35 +26066,19 @@ const core = __webpack_require__(470);
 const github_1 = __webpack_require__(146);
 const context_1 = __webpack_require__(204);
 const input_1 = __webpack_require__(265);
-function fetchCurrentSettings(owner, repo) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            return yield github_1.client.repos.getBranch({
-                owner,
-                repo,
-                branch: 'master',
-            });
-        }
-        catch (e) {
-            core.debug(`could not check for branch protection: ${e}`);
-            throw e;
-        }
-    });
-}
 function checkForBranchProtection() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         core.debug('checking for branch protection');
         const context = context_1.getContext();
         const { owner, repo } = context.repo;
-        const resp = yield fetchCurrentSettings(owner, repo);
-        const { data } = resp;
+        const input = input_1.getInput();
+        const data = yield github_1.fetchCurrentSettings();
         const errors = [];
         if (!data.protected) {
             errors.push('❌ - branch protection is not enabled');
         }
         const checks = (_a = data === null || data === void 0 ? void 0 : data.protection) === null || _a === void 0 ? void 0 : _a.required_status_checks;
-        const input = input_1.getInput();
         if (!((_b = checks === null || checks === void 0 ? void 0 : checks.contexts) === null || _b === void 0 ? void 0 : _b.length) && input.requiredChecks.length) {
             errors.push('❌ - required status checks are not enforced');
         }
@@ -39579,11 +39580,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __webpack_require__(470);
 const slack_1 = __webpack_require__(777);
 const github_1 = __webpack_require__(146);
+const github_2 = __webpack_require__(146);
 var PayloadAction;
 (function (PayloadAction) {
     PayloadAction["LABELED"] = "labeled";
     PayloadAction["OPENED"] = "opened";
 })(PayloadAction || (PayloadAction = {}));
+function getRequiredChecks(branch = 'master') {
+    return __awaiter(this, void 0, void 0, function* () {
+        const data = yield github_2.fetchCurrentSettings(branch);
+        return data.protection.required_status_checks.contexts;
+    });
+}
 /**
  * Main entry point for all input/pr actions.
  *
@@ -39621,7 +39629,7 @@ function onLabel(octokit, context, input) {
                     return;
                 }
                 yield alertLabelApplied();
-                yield onSkipCILabel(octokit, context, label.name, input.requiredChecks);
+                yield onSkipCILabel(octokit, context, label.name);
                 break;
             case input.skipApprovalLabel:
                 yield alertLabelApplied();
@@ -39646,8 +39654,9 @@ function onOpen(octokit, context, input) {
         yield comment(octokit, context.issue, body);
     });
 }
-function onSkipCILabel(octokit, context, labelName, requiredChecks) {
+function onSkipCILabel(octokit, context, labelName) {
     return __awaiter(this, void 0, void 0, function* () {
+        const requiredChecks = yield getRequiredChecks();
         core.debug(`bypassing checks - ${requiredChecks}`);
         yield comment(octokit, context.issue, `Bypassing CI checks - ${labelName} applied`);
         const { owner, repo } = context.issue;

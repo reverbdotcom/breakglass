@@ -4,6 +4,7 @@ jest.mock('../src/slack');
 
 import * as nock from 'nock';
 import * as mockdate from 'mockdate'
+
 import { postMessage } from '../src/slack';
 import { onIssueOrPR } from '../src/on_pull_request';
 import * as github from '@actions/github';
@@ -27,17 +28,18 @@ const mockContext = {
 }
 
 const ghClient = github.getOctokit('foozles');
+const requiredChecks = [
+  'ci/circleci: fast_spec',
+  'ci/circleci: js',
+]
 const input = {
+  requiredChecks,
   githubToken: 'the-github-token',
   slackHook: '',
   instructions: 'this is how we pr',
   skipApprovalLabel: 'emergency-approval',
   skipCILabel: 'emergency-ci',
   posthocApprovalLabel: 'posthoc-approval',
-  requiredChecks: [
-    'ci/circleci: fast_spec',
-    'ci/circleci: js',
-  ],
   verifiedCILabel: 'the-verified-ci-label',
   branch: 'master',
 };
@@ -87,7 +89,6 @@ describe('pull request actions', () => {
           deleted = true;
           return true;
         }).reply(200, 'way to go');
-
 
       await onIssueOrPR(
         ghClient,
@@ -160,6 +161,14 @@ describe('pull request actions', () => {
     it('on label emergency-ci', async () => {
       let ghCommentBody;
       let checkUpdateBody;
+
+      nock('https://api.github.com').get('/repos/the-org/the-repo/branches/master').reply(200, {
+        protection: {
+          required_status_checks: {
+            contexts: requiredChecks,
+          },
+        },
+      })
 
       nock('https://api.github.com')
         .post('/repos/github/my-repo/issues/12/comments', (req) =>  {

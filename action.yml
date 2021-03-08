@@ -28,8 +28,13 @@ inputs:
     description: Token injected via secrets
     required: true
   required_checks:
-    description: All required ci checks in a comma deliminated string
+    description: |
+      Whether or not this repo should have required checks. This is used as part of a nightly cron that
+      verifies, among other things, that checks have not been disabled accidentally or maliciously.
+      A blank string signifies that the repo does not require any checks.
+      Note: This was previously a comma-separated list specifying precisely which checks were required.
     required: false
+    default: true
   instructions:
     description: Instructions to add to each pull request
     required: false

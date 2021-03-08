@@ -16,6 +16,7 @@ import {
   tagCIChecksOnPR,
   getStatusOfMaster,
   getClosedInPastWeek,
+  fetchCurrentSettings,
 } from '../src/github';
 
 const API = 'https://api.github.com';
@@ -172,6 +173,19 @@ describe('github', () => {
       const prs = await getIssuesMissingReview();
       expect(prs.length).toEqual(2);
       expect(prs[0].id).toEqual(1);
+    });
+  });
+
+  describe('::fetchCurrentSettings', () => {
+    it('returns settings for master branch', async () => {
+      expect.assertions(1);
+
+      nock(API).get('/repos/the-org/the-repo/branches/master').reply(200, {
+        protected: true,
+      });
+
+      const settings = await fetchCurrentSettings();
+      expect(settings.protected).toEqual(true);
     });
   });
 });

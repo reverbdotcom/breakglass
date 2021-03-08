@@ -3,6 +3,9 @@ import * as github from '@actions/github';
 import { Input } from './input';
 import { postMessage } from './slack';
 import { formatComment } from './github';
+import {
+  fetchCurrentSettings,
+} from '../src/github';
 
 type GitHubClient = ReturnType<typeof github.getOctokit>;
 type Context = typeof github.context;
@@ -10,6 +13,11 @@ type Context = typeof github.context;
 enum PayloadAction {
   LABELED = 'labeled',
   OPENED = 'opened',
+}
+
+async function getRequiredChecks(branch = 'master'): Promise<string[]> {
+  const data = await fetchCurrentSettings(branch);
+  return data.protection.required_status_checks.contexts;
 }
 
 /**
@@ -57,7 +65,6 @@ async function onLabel(octokit: GitHubClient, context: Context, input: Input) {
         octokit,
         context,
         label.name,
-        input.requiredChecks,
       );
       break;
     case input.skipApprovalLabel:
@@ -91,8 +98,8 @@ async function onSkipCILabel(
   octokit: GitHubClient,
   context: Context,
   labelName: string,
-  requiredChecks: string[],
 ) {
+  const requiredChecks = await getRequiredChecks();
   core.debug(`bypassing checks - ${requiredChecks}`);
 
   await comment(
