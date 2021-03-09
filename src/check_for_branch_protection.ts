@@ -1,29 +1,18 @@
 import * as core from '@actions/core';
-import { client } from './github';
+import {
+  client,
+  fetchCurrentSettings,
+} from './github';
 import { getContext } from './context';
 import { getInput } from './input';
-
-async function fetchCurrentSettings(owner: string, repo: string) {
-  try {
-    return await client.repos.getBranch({
-      owner,
-      repo,
-      branch: 'master',
-    });
-  } catch (e) {
-    core.debug(`could not check for branch protection: ${e}`);
-    throw e;
-  }
-}
 
 export async function checkForBranchProtection() {
   core.debug('checking for branch protection');
 
   const context = getContext();
   const { owner, repo } = context.repo;
-  const resp = await fetchCurrentSettings(owner, repo);
-
-  const { data } = resp;
+  const input = getInput();
+  const data = await fetchCurrentSettings();
 
   const errors = [];
   if (!data.protected) {
@@ -31,8 +20,6 @@ export async function checkForBranchProtection() {
   }
 
   const checks = data?.protection?.required_status_checks;
-  const input = getInput();
-
   if (!checks?.contexts?.length && input.requiredChecks.length) {
     errors.push('❌ - required status checks are not enforced');
   }

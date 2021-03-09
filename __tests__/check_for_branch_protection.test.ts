@@ -2,7 +2,7 @@ jest.mock('../src/context');
 jest.mock('../src/github');
 
 const input = {
-  requiredChecks: ['lint', 'ci'],
+  requiredChecks: ['true'],
 };
 
 jest.mock('../src/input', () => {
@@ -15,7 +15,10 @@ jest.mock('../src/input', () => {
 
 import { mocked } from 'ts-jest/utils';
 import { checkForBranchProtection } from '../src/check_for_branch_protection';
-import { client } from '../src/github';
+import {
+  client,
+  fetchCurrentSettings,
+} from '../src/github';
 import { getInput } from '../src/input';
 
 const VALID_BRANCH_SETTINGS = {
@@ -30,11 +33,9 @@ const VALID_BRANCH_SETTINGS = {
 
 describe('::checkForBranchProtection', () => {
   it('does not open an issue if the configuration is valid', async () => {
-    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-      },
-    }))
+    mocked(fetchCurrentSettings).mockResolvedValue({
+      ...VALID_BRANCH_SETTINGS,
+    } as any);
 
     await checkForBranchProtection();
 
@@ -42,12 +43,10 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('opens an issue if the branch is not protected', async () => {
-    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        protected: false,
-      },
-    }))
+    mocked(fetchCurrentSettings).mockResolvedValue({
+      ...VALID_BRANCH_SETTINGS,
+      protected: false,
+    } as any)
 
     await checkForBranchProtection();
 
@@ -61,16 +60,14 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('opens an issue if ci checks are not enabled', async () => {
-    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        protection: {
-          required_status_checks: {
-            contexts: [],
-          }
+    mocked(fetchCurrentSettings).mockResolvedValue({
+      ...VALID_BRANCH_SETTINGS,
+      protection: {
+        required_status_checks: {
+          contexts: [],
         }
-      },
-    }))
+      }
+    } as any);
 
     await checkForBranchProtection();
 
@@ -86,17 +83,15 @@ describe('::checkForBranchProtection', () => {
   it('does not open an issue if ci checks are not required per the input', async () => {
     input.requiredChecks = [];
 
-    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        protection: {
-          required_status_checks: {
-            enforcement_level: 'everyone',
-            contexts: [],
-          }
+    mocked(fetchCurrentSettings).mockResolvedValue({
+      ...VALID_BRANCH_SETTINGS,
+      protection: {
+        required_status_checks: {
+          enforcement_level: 'everyone',
+          contexts: [],
         }
-      },
-    }))
+      }
+    } as any);
 
     await checkForBranchProtection();
 
@@ -104,16 +99,14 @@ describe('::checkForBranchProtection', () => {
   });
 
   it('opens an issue if rules are not applied to admins', async () => {
-    (client.repos.getBranch as any).mockReturnValue(Promise.resolve({
-      data: {
-        ...VALID_BRANCH_SETTINGS,
-        protection: {
-          required_status_checks: {
-            enforcement_level: 'nobody',
-          },
+    mocked(fetchCurrentSettings).mockResolvedValue({
+      ...VALID_BRANCH_SETTINGS,
+      protection: {
+        required_status_checks: {
+          enforcement_level: 'nobody',
         },
       },
-    }))
+    } as any);
 
     await checkForBranchProtection();
 

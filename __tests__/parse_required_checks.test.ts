@@ -1,6 +1,10 @@
 import parseRequiredChecks from '../src/parse_required_checks';
 
 describe('parseRequiredChecks', () => {
+  it('returns array from string', () => {
+    expect(parseRequiredChecks('foo')).toEqual(['foo']);
+  });
+
   it('returns array from comma-separated list', () => {
     expect(parseRequiredChecks('foo,bar')).toEqual(['foo', 'bar']);
   });

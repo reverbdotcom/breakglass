@@ -135,3 +135,19 @@ export function formatComment(body: string): string {
   const now = new Date().toString();
   return `${body}\n\n---\n${now}`;
 }
+
+export async function fetchCurrentSettings(
+  branch = 'master',
+) {
+  try {
+    const branchResponse = await client.repos.getBranch({
+      owner,
+      repo,
+      branch,
+    });
+    return branchResponse.data;
+  } catch (e) {
+    core.debug(`could not check for branch protection: ${e}`);
+    throw e;
+  }
+}
